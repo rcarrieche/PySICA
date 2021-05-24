@@ -4,6 +4,8 @@ import datetime
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
 
+# TODO: renomear este arquivo para loaders.]
+# TODO: separar connection de loader
 class ValiConnection(object):
     """
         teste docs
@@ -20,6 +22,10 @@ class ValiConnection(object):
         return self.cursor
 
 class Loader(object):
+    """ 
+    Objetos responsáveis por usar as conexões e entregar os dados em formato dataframe aos datasets
+    """
+    
     def __init__(self):
         pass
     
@@ -54,7 +60,11 @@ class ValiLoader(Loader):
         dados_mea = self.cursor.fetchall()
         colunas = [c[0] for c in self.cursor.description]
         return dados_mea, colunas
-        
+
+class SicaFileLoader(Loader):
+    pass
+
+    
 '''
 cursor.execute("SELECT @@version;") 
 row = cursor.fetchone() 

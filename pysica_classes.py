@@ -79,7 +79,7 @@ class Dataset(object):
                 colunas_mantidas_tag = ['PSC', 'Description', 'UE']
                 for col in colunas_mantidas_tag:
                     dados_tag.update({})
-                tag_obj = Tag(tag_id, dados_tag)
+                tag_obj = Tag(tag_id, **dados_tag)
                 self.register_tag(tag_obj)
                
             if tag_id not in self.data:

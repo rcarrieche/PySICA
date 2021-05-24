@@ -14,27 +14,29 @@ class Pysica(object):
         self.save_file = save_file
         # inicializar dataset padrão list_datasets. TODO: Carregar dos salvos  
         self.dict_datasets = {}
-        dataset_blank = Dataset('Dataset inicial, só pra não ficar em branco', 'blank')
+        dataset_blank = Dataset('blank', titulo='Dataset inicial, só pra não ficar em branco')
         self.dict_datasets.update({'blank':dataset_blank})
         # inicializa lista de tags 
         self.dict_tags = {}
-        self.dict_tags.update({'blank': Tag('blank', {'titulo':'Tag em branco para iniciar tags'})})
+        self.dict_tags.update({'blank': Tag('blank', titulo='Tag em branco para iniciar tags')})
         self.dict_curvas = {}
        
     def gera_dataset(self, datetime_inicio, datetime_fim):
         #insere na lista de datasets
         pass
-    def load_dataset_sica(self, caminho, dataset = None): #insere um arquivo txt do SICA no dataset
+    def load_dataset_sica(self, caminho, dataset = None, **kwargs): #insere um arquivo txt do SICA no dataset
         if(not dataset):
-            dataset_obj = d
+            titulo = kwargs['titulo'] if kwargs['titulo'] else 'Teste Pandas to SICA'
+            dataset_obj = Dataset('SICATESTE', titulo = 'Teste Pandas to SICA')
         return dataset_obj
-        pass
+    
     
     def create_dataset_vali(self, list_tags,  start, end, **kwargs): #carrega dados do Vali no dataset
         """
         teste doc
         """
-        dataset = Dataset(dataset_id, titulo)
+        dataset_id = "TESTE_VALIDB"
+        dataset = Dataset(dataset_id, titulo = kwargs['titulo'])
         '''
         if type(dataset)==str: #cast para Dataset ao criar o objeto
             dataset = Dataset(dataset)
