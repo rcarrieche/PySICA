@@ -1,3 +1,4 @@
+.gitignore
 .ipynb_checkpoints/
 .pylint.d/
 .spyproject/
@@ -6,3 +7,4 @@ __pycache__/
 lalala.py
 new 3.txt
 teste_jupyter.ipynb
+connections.py

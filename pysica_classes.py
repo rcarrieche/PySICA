@@ -1,6 +1,5 @@
 import pint 
 import numpy as np
-import connection as cnn
 import loaders
 
 
@@ -13,11 +12,18 @@ class Curva(object):
         self.curva_id = curva_id
         self.titulo = ""
         self.descricao = ""
+        self.title = ""
+        self.description = ""
+        self.ndim = 0
+        self.tags = []
         # self.x = np.array()
-        self.ue = ""
+        # TODO: abstrair melhor essa merda
+        self.ue = [] # vetor de ue de acordo com os tags
+        ue = {'original': '', 'used': ''}
         self.val = None
         # self.tags_ = tag
-        self.metadata = {'x_tag': None, 'y_tag':None, 'z_tag':None, 'x_options':{}, 'y_options':{}, 'z_options':{}}
+        self.metadata = []
+        metadata = {'x_tag': None, 'y_tag':None, 'z_tag':None, 'x_options':{}, 'y_options':{}, 'z_options':{}}
         self.x_values = np.Array()
         self.y_values = np.Array()
         self.z_values = np.Array()
@@ -25,7 +31,7 @@ class Curva(object):
             for k, v in kwargs.items():
                 setattr(self, k, v)
                 
-    def set_values(self, list_tag_id, list_values):
+    def set_values(self, list_tags, list_values):
         pass
 
         
