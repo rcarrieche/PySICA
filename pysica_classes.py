@@ -1,6 +1,8 @@
 import pint 
 import numpy as np
-import vali_connection
+import connection as cnn
+import loaders
+
 
 
 
@@ -54,12 +56,13 @@ class Dataset(object):
         self.tags = {} # tag_id : Tag
         self.data = {} # tag_id : Curva 
         self.timesheet = []
+        self.loader = None
         if(kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
         
-    def load_vali_mea(self, list_tags, start, end): #TODO: de quem é a responsabilidade de 
-        loader = vali_connection.ValiLoader()
+    def load_vali_mea222(self, list_tags, start, end): #TODO: de quem é a responsabilidade de 
+        loader = loaders.ValiLoader()
         dados_mea = loader.get_vali_mea(list_tags, start, end)
         # print(dados_mea)
         valores = []
@@ -70,32 +73,49 @@ class Dataset(object):
             
             if tag_id not in self.tags: 
                 # REGISTRA tag
+                
                 dados_tag = {
                     'titulo': dado_mea['Description'],
                     'origem_id': self.dataset_id,
                     'descricao': dado_mea['Description'],
                     'ue_original': dado_mea['UE']
                     }
+                print(dados_tag)
                 colunas_mantidas_tag = ['PSC', 'Description', 'UE']
                 for col in colunas_mantidas_tag:
-                    dados_tag.update({})
+                    dados_tag.update({col: dado_mea[col]})
                 tag_obj = Tag(tag_id, **dados_tag)
                 self.register_tag(tag_obj)
-               
-            if tag_id not in self.data:
+            '''   
+            if tag_id not in self.tags:
                  # reinicia inicia vetor de dados da curva para o tag
                 valores = []
-                self.data.update({tag_id:tag_obj})
-                pass
+                self.tags.update({tag_id:tag_obj})
+                '''
             valores.append(dado_mea['Value_Average'])
         # TODO: registrar os tags no dataset
         # TODO: registrar os dados 
+    def load_vali_mea(self, list_tags, start, end):
+        loader = loaders.ValiLoader()
+        df_mea = loader.get_vali_mea(list_tags, start, end)
+        print(df_mea)
+        dir(df_mea)
+        
+    def load_vali_dvr(self, list_tags, start, end):
+        pass
     
+    def load_sica_file(self, list_tags, **kwargs):
+        pass
+        
     def register_tag(self, tag):
         self.tags.update({tag.tag_id:tag})
+        print(self.tags)
     def get_tag_list(self):
         return self.tags.items()
-    
+
+
+
+
 # não será feito dessa forma
 class Head(Curva):
     pass
