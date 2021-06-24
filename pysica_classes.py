@@ -36,8 +36,8 @@ class Curva(object):
 
         
 class Tag(object):
-    def __init__(self, tag_name, **kwargs):
-        self.tag_name = tag_name
+    def __init__(self, tagname, **kwargs):
+        self.tagname = tagname
         self.tag_id = ""
         self.titulo = ""
         self.descricao = ""
@@ -63,10 +63,46 @@ class Dataset(object):
         self.data = {} # tag_id : Curva 
         self.timesheet = []
         self.loader = None
+        self.df = None
         if(kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
         
+    def update(self, **kwargs):
+        if(kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        
+    def load_vali_mea(self, list_tags, start, end):
+        loader = loaders.ValiLoader(database = 'SICA1_SQL')
+        df_mea = loader.get_vali_mea(list_tags, start, end)
+        self.df = df_mea
+        
+        
+    def load_vali_dvr(self, list_tags, start, end):
+        loader = loaders.ValiLoader(database = 'ANGRA1_DVR')
+        df_mea = loader.get_vali_mea(list_tags, start, end)
+        self.df = df_mea
+    
+    def load_sica_file(self, list_tags, **kwargs):
+        pass
+        
+    def register_tag(self, tag):
+        self.tags.update({tag.tag_id:tag})
+        print(self.tags)
+        
+    def get_tag_list(self):
+        return self.tags.items()
+
+    
+    def get_val_dict(self, tag, **kwargs): # para satisfazer os testes agora. 
+        # TODO: pensar em uma função melhor e padronizar os dados de retorno, lembrando que a organização do dataframe pertence ao objeto loader. O Dataset deve trabalhar com os dados já padronizados
+        self.df.loc
+        pass
+
+    def get_timesheet(self):
+        return
+    
     def load_vali_mea222(self, list_tags, start, end): #TODO: de quem é a responsabilidade de 
         loader = loaders.ValiLoader()
         dados_mea = loader.get_vali_mea(list_tags, start, end)
@@ -101,26 +137,6 @@ class Dataset(object):
             valores.append(dado_mea['Value_Average'])
         # TODO: registrar os tags no dataset
         # TODO: registrar os dados 
-    def load_vali_mea(self, list_tags, start, end):
-        loader = loaders.ValiLoader()
-        df_mea = loader.get_vali_mea(list_tags, start, end)
-        print(df_mea)
-        dir(df_mea)
-        
-    def load_vali_dvr(self, list_tags, start, end):
-        pass
-    
-    def load_sica_file(self, list_tags, **kwargs):
-        pass
-        
-    def register_tag(self, tag):
-        self.tags.update({tag.tag_id:tag})
-        print(self.tags)
-    def get_tag_list(self):
-        return self.tags.items()
-
-
-
 
 # não será feito dessa forma
 class Head(Curva):
@@ -128,7 +144,7 @@ class Head(Curva):
 
     
 # DEPRECATED
-class PysicaTagval(object):
+class Tagval(object):
     val = '' # valor principal procurado, np array + pint
     tag = ''
     dados = '';
