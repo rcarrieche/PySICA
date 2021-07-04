@@ -16,10 +16,29 @@ class Loader(object):
         pass
     
 class ValiLoader(Loader):
+    """
+    documentation
+    """
     def __init__(self, **kwargs):
-        vali_connection = ValiConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
-        self.cursor = vali_connection.cursor()
-    
+        self.vali_connection = ValiConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
+        self.cursor = self.vali_connection.cursor()
+        
+    def change_database(self, database):
+        """
+        Parameters
+        ----------
+        database : TYPE str
+            
+        muda a conexão ao banco de dados
+
+        Returns
+        -------
+        None.
+
+        """
+        self.vali_connection = ValiConnection(database = database) ## TODO: guardar as conexões em um método de classe
+        self.cursor = self.vali_connection.cursor()
+        
     def get_vali_mea(self, list_tags, inicio, fim):
         """ Retorna tupla resultados, colunas. Este será o padrão das consultas """
         format_string = '%Y-%m-%d %H:%M:%S'
@@ -38,7 +57,6 @@ class ValiLoader(Loader):
         # tentar da forma pytônica
         dados_mea = [list(linha) for linha in self.cursor.fetchall()]
         colunas = [c[0] for c in self.cursor.description]
-        print(colunas)
         df_mea = pd.DataFrame(dados_mea, columns = colunas)
         #df_mea.columns = colunas
         return df_mea
@@ -61,11 +79,47 @@ class ValiLoader(Loader):
         # tentar da forma pytônica
         dados_mea = [list(linha) for linha in self.cursor.fetchall()]
         colunas = [c[0] for c in self.cursor.description]
-        print(colunas)
         df_mea = pd.DataFrame(dados_mea, columns = colunas)
         #df_mea.columns = colunas
         return df_mea
     
+    def get_sica1sql_tags(self):
+        if self.database != 'SICA1_SQL':
+            self.change_database('SICA1_SQL')
+        """
+        Returns
+        -------
+        dados_tags : TYPE
+            DESCRIPTION.
+        colunas : TYPE
+            DESCRIPTION.
+
+        """
+        query = """
+            SELECT [PSC] ,[Description] ,[UE]
+      FROM [SICA1_SQL].[dbo].[TAG_DEF]"""
+        self.cursor.execute(query)
+        dados_tags = [list(linha) for linha in self.cursor.fetchall()]
+        colunas = [c[0] for c in self.cursor.description]
+        return dados_tags,colunas
+    
+    def get_angra1dvr_tags(self):
+        self.change_database('ANGRA1_DVR')
+        query = """
+            SELECT  Tags.TagID, Tags.Name, Tags.Comment, Tags.Consolidation, PhysUnits.Name as UE, Tags.PhysUnitID
+  FROM [ANGRA1_DVR].[dbo].[Tags] left join 
+  [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID where Comment != ''
+      """
+        self.cursor.execute(query)
+        dados_tags = [list(linha) for linha in self.cursor.fetchall()]
+        colunas = [c[0] for c in self.cursor.description]
+        return dados_tags,colunas
+    
+    # 3754 
+    def get_runs(self):
+        self.change_database('ANGRA1_DVR')
+        
+        
     def get_vali_mea22222(self, list_tags, inicio, fim):
         format_string = '%Y-%m-%d %H:%M:%S'
         dt_inicio = datetime.datetime.strptime(inicio, format_string)
@@ -80,6 +134,7 @@ class ValiLoader(Loader):
             resultados.append(dict(zip(colunas, linha)))
         # print(colunas)
         return resultados
+    
 class SicaFileLoader(Loader):
     pass
 
