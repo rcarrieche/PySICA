@@ -137,12 +137,17 @@ class Dataset(object):
             valores.append(dado_mea['Value_Average'])
         # TODO: registrar os tags no dataset
         # TODO: registrar os dados 
+    
+    def load_tag(list_tags):
+        pass
 
 # não será feito dessa forma
 class Head(Curva):
     pass
 
-    
+
+
+  
 # DEPRECATED
 class Tagval(object):
     val = '' # valor principal procurado, np array + pint
