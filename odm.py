@@ -33,24 +33,53 @@ class TagProp(me.Document):
     tagprop_id = me.SequenceField()
 
 class Tag(me.Document):
-    tagname = me.StringField()
+    #tagname = me.StringField()
+    name = me.StringField()
+    alt_names = me.ListField(me.StringField())
     tag_id = me.SequenceField()
     description = me.StringField()
     comment = me.StringField()
-    alt_name = me.ListField()
     tag_parent = me.ListField(me.ReferenceField('Tag'))
     tag_same_as = me.ListField(me.ReferenceField('Tag'))
     tag_sibling = me.ListField(me.ReferenceField('Tag'))
+    tag_master = me.ReferenceField('Tag')
+    tag_connections = me.ListField(me.ReferenceField('Tag'))
     ue = me.ReferenceField(UE)
     tagtype = me.ReferenceField(TagType)
     tag_properties = me.ReferenceField(TagProp)
+    origin = me.ReferenceField('DataOrigin')
+    kks = me.StringField()
     
+
+class DataOrigin(me.Document):
+    name = me.StringField()
+    data_origin_id = me.SequenceField()
+    description = me.StringField()
+    related_docs = me.ListField()
+
 class Dataset(me.Document):
     name = me.StringField()
     dataset_id = me.SequenceField()
     description = me.StringField()
+    data_origin = me.ReferenceField(DataOrigin)
+
+class Val(me.DynamicDocument):
+    pass
 
 class TagVal(me.Document):
     tag = me.ReferenceField(Tag)
     date = me.DateTimeField()
-        
+    dataset = me.ReferenceField(Dataset)
+    #val = me.EmbeddedDocumentField(Val)
+    val = me.DictField()
+    
+    
+    
+class Component(me.Document):
+    name = me.StringField() 
+    data_origin_id = me.SequenceField()
+    description = me.StringField()
+    related_docs = me.ListField()
+    meta = {}
+    
+    

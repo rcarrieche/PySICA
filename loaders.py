@@ -1,6 +1,6 @@
 import pyodbc 
 import datetime
-from connections import ValiConnection
+from connections import ValiConnection, MongoConnection
 import pandas as pd
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
@@ -61,7 +61,74 @@ class ValiLoader(Loader):
         #df_mea.columns = colunas
         return df_mea
     
-    def get_vali_dvr(self, list_tags, inicio, fim):
+    
+    
+    def get_sica1sql_tags(self):
+        self.change_database('SICA1_SQL')
+        """
+        Returns
+        -------
+        dados_tags : TYPE
+            DESCRIPTION.
+        colunas : TYPE
+            DESCRIPTION.
+
+        """
+        query = """
+            SELECT [PSC] ,[Description] ,[UE]
+      FROM [SICA1_SQL].[dbo].[TAG_DEF]"""
+        return self.execute_sql(query)
+        
+    
+    def get_angra1dvr_tags(self):
+        self.change_database('ANGRA1_DVR')
+        query = """
+            SELECT  Tags.TagID, Tags.Name, Tags.Comment, Tags.Consolidation, PhysUnits.Name as UE, Tags.PhysUnitID
+  FROM [ANGRA1_DVR].[dbo].[Tags] left join 
+  [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID where Comment != ''
+      """
+        return self.execute_sql(query)
+    
+    # 3754 
+    def get_runs(self):
+        self.change_database('ANGRA1_DVR')
+        
+    def get_sica1sql_values(self, list_tags, inicio, fim):
+        self.change_database('SICA1_SQL')
+        query = """
+            SELECT TAG_DEF.PSC, MEA.Date_Acquisition, MEA.Value_Average 
+            FROM MEA LEFT JOIN TAG_DEF ON MEA.PSC = TAG_DEF.PSC 
+            WHERE MEA.PSC IN {0} AND MEA.Date_Acquisition BETWEEN '{1}' AND '{2}'
+            """
+        #print(query)
+        return self.execute_sql(query)
+    
+    
+    
+    def execute_sql(self, query):
+        self.cursor.execute(query)
+        dados = [list(linha) for linha in self.cursor.fetchall()]
+        colunas = [c[0] for c in self.cursor.description]
+        return dados,colunas
+        
+        
+        
+    def get_vali_mea22222(self, list_tags, inicio, fim):
+        format_string = '%Y-%m-%d %H:%M:%S'
+        dt_inicio = datetime.datetime.strptime(inicio, format_string)
+        dt_fim = datetime.datetime.strptime(fim, format_string)
+        query = "SELECT TAG_DEF.PSC,TAG_DEF.Description, TAG_DEF.UE, MEA.Date_Acquisition, MEA.Value_Average FROM MEA LEFT JOIN TAG_DEF ON MEA.PSC = TAG_DEF.PSC WHERE MEA.PSC IN {0} AND MEA.Date_Acquisition BETWEEN '{1}' AND '{2}'".format(str(tuple(list_tags)), dt_inicio.isoformat(), dt_fim.isoformat())
+        #print(query)
+        self.cursor.execute(query)
+        dados_mea = self.cursor.fetchall()
+        colunas = [c[0] for c in self.cursor.description]
+        resultados = []
+        for linha in dados_mea:
+            resultados.append(dict(zip(colunas, linha)))
+        # print(colunas)
+        return resultados
+    
+    def get_vali_dvr22222(self, list_tags, inicio, fim):
         """ Retorna tupla resultados, colunas. Este será o padrão das consultas """
         format_string = '%Y-%m-%d %H:%M:%S'
         dt_inicio = datetime.datetime.strptime(inicio, format_string)
@@ -82,62 +149,18 @@ class ValiLoader(Loader):
         df_mea = pd.DataFrame(dados_mea, columns = colunas)
         #df_mea.columns = colunas
         return df_mea
-    
-    def get_sica1sql_tags(self):
-        if self.database != 'SICA1_SQL':
-            self.change_database('SICA1_SQL')
-        """
-        Returns
-        -------
-        dados_tags : TYPE
-            DESCRIPTION.
-        colunas : TYPE
-            DESCRIPTION.
-
-        """
-        query = """
-            SELECT [PSC] ,[Description] ,[UE]
-      FROM [SICA1_SQL].[dbo].[TAG_DEF]"""
-        self.cursor.execute(query)
-        dados_tags = [list(linha) for linha in self.cursor.fetchall()]
-        colunas = [c[0] for c in self.cursor.description]
-        return dados_tags,colunas
-    
-    def get_angra1dvr_tags(self):
-        self.change_database('ANGRA1_DVR')
-        query = """
-            SELECT  Tags.TagID, Tags.Name, Tags.Comment, Tags.Consolidation, PhysUnits.Name as UE, Tags.PhysUnitID
-  FROM [ANGRA1_DVR].[dbo].[Tags] left join 
-  [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID where Comment != ''
-      """
-        self.cursor.execute(query)
-        dados_tags = [list(linha) for linha in self.cursor.fetchall()]
-        colunas = [c[0] for c in self.cursor.description]
-        return dados_tags,colunas
-    
-    # 3754 
-    def get_runs(self):
-        self.change_database('ANGRA1_DVR')
-        
-        
-    def get_vali_mea22222(self, list_tags, inicio, fim):
-        format_string = '%Y-%m-%d %H:%M:%S'
-        dt_inicio = datetime.datetime.strptime(inicio, format_string)
-        dt_fim = datetime.datetime.strptime(fim, format_string)
-        query = "SELECT TAG_DEF.PSC,TAG_DEF.Description, TAG_DEF.UE, MEA.Date_Acquisition, MEA.Value_Average FROM MEA LEFT JOIN TAG_DEF ON MEA.PSC = TAG_DEF.PSC WHERE MEA.PSC IN {0} AND MEA.Date_Acquisition BETWEEN '{1}' AND '{2}'".format(str(tuple(list_tags)), dt_inicio.isoformat(), dt_fim.isoformat())
-        #print(query)
-        self.cursor.execute(query)
-        dados_mea = self.cursor.fetchall()
-        colunas = [c[0] for c in self.cursor.description]
-        resultados = []
-        for linha in dados_mea:
-            resultados.append(dict(zip(colunas, linha)))
-        # print(colunas)
-        return resultados
-    
 class SicaFileLoader(Loader):
     pass
 
+
+class MongoLoader(Loader):
+    def __init__(self, **kwargs):
+        self.connection = MongoConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
+        self.db = self.connection.db
+        
+    def drop_database_test(self, database):
+        self.connection.connection.drop_database(database)
+    
     
 '''
 cursor.execute("SELECT @@version;") 
