@@ -68,11 +68,14 @@ def import_vali_dvr():
     vali_loader = ld.ValiLoader()
     mongo_loader = ld.MongoLoader(database = 'Teste') 
     
+    # definindo origem
+    origin_name = 'ANGRA1_DVR'
+    origin = odm.DataOrigin.objects(name__contains=origin_name).first()
+    
     # import tags
     dados_tag_vali, colunas_tag_vali = vali_loader.get_angra1dvr_tags()
     print(colunas_tag_vali)
     print(dados_tag_vali)
-    origin = 'ANGRA1_DVR'
     for dado in dados_tag_vali:
         tag = odm.Tag(name=dado[1], description=dado[2], ue=dado[4])
         tag.origin = odm.DataOrigin.objects(name__contains=origin).first()
@@ -80,7 +83,9 @@ def import_vali_dvr():
         
     # import physical units
     
-    # importando dados do SICA1_SQL
+     # definindo dataset
+    dataset = odm.Dataset(name = 'ANGRA1_DVR TESTE', data_origin = origin).save()
+    # importando dados do ANGRA1_DVR
     
     
 def import_sica():
