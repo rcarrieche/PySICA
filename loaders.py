@@ -93,16 +93,14 @@ class ValiLoader(Loader):
     def get_runs(self):
         self.change_database('ANGRA1_DVR')
         
-    def get_sica1sql_values(self, list_tags, inicio, fim):
+    def get_sica1sql_values(self):
         self.change_database('SICA1_SQL')
         query = """
             SELECT TAG_DEF.PSC, MEA.Date_Acquisition, MEA.Value_Average 
             FROM MEA LEFT JOIN TAG_DEF ON MEA.PSC = TAG_DEF.PSC 
-            WHERE MEA.PSC IN {0} AND MEA.Date_Acquisition BETWEEN '{1}' AND '{2}'
             """
         #print(query)
         return self.execute_sql(query)
-    
     
     
     def execute_sql(self, query):

@@ -35,14 +35,34 @@ def test_origin():
 def import_vali_mea():
     vali_loader = ld.ValiLoader()
     mongo_loader = ld.MongoLoader(database = 'Teste') 
+    
+    
+    # definindo origem
+    origin_name = 'SICA1_SQL'
+    origin = odm.DataOrigin.objects(name__contains=origin_name).first()
+    
+     # import physical units
+    
+    # insere tags
     dados_tag_mea, colunas_tag_mea = vali_loader.get_sica1sql_tags()
     print(colunas_tag_mea)
     print(dados_tag_mea)
-    origin = 'SICA1_SQL'
     for dado in dados_tag_mea:
         tag = odm.Tag(name=dado[0], description=dado[1], ue=dado[2])
-        tag.origin = odm.DataOrigin.objects(name__contains=origin).first()
+        tag.data_origin = origin
         tag.save()
+    
+    # definindo dataset
+    dataset = odm.Dataset(name = 'SICA1_SQL TESTE', data_origin = origin).save()
+    
+    # importando dados do SICA1_SQL
+    dados_mea, colunas_mea = vali_loader.get_sica1sql_values()
+    for dado in dados_mea:
+        tag = odm.Tag.objects(name=dado[0], data_origin = origin).first()
+        print(tag)
+        print(dado)
+        tagval = odm.TagVal(tag=tag, val=dado[2], date=dado[1], dataset = dataset)
+        tagval.save()
 
 def import_vali_dvr():
     vali_loader = ld.ValiLoader()
@@ -59,6 +79,8 @@ def import_vali_dvr():
         tag.save()
         
     # import physical units
+    
+    # importando dados do SICA1_SQL
     
     
 def import_sica():

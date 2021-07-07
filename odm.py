@@ -47,7 +47,7 @@ class Tag(me.Document):
     ue = me.ReferenceField(UE)
     tagtype = me.ReferenceField(TagType)
     tag_properties = me.ReferenceField(TagProp)
-    origin = me.ReferenceField('DataOrigin')
+    data_origin = me.ReferenceField('DataOrigin')
     kks = me.StringField()
     
 
@@ -71,7 +71,8 @@ class TagVal(me.Document):
     date = me.DateTimeField()
     dataset = me.ReferenceField(Dataset)
     #val = me.EmbeddedDocumentField(Val)
-    val = me.DictField()
+    values = me.DictField()
+    val = me.FloatField()
     
     
     
