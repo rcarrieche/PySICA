@@ -4,10 +4,13 @@ import mongoengine as me
 TAG_PROP = ['Measurement', 'Mea_Acc', 'Validated', 'Val_Acc']
 
 class Run(me.Document): # compatibilidade com Vali para conversão
-    run_id = me.IntField()
+    run_id = me.SequenceField()
     date = me.DateTimeField()
     PDB = me.StringField()
     version = me.StringField()
+    original_id = me.IntField()
+    values = me.DictField()
+    dataset_id = me.ReferenceField('Dataset')
     # TODO: procurar as propriedades do run na lista de tags e inserir tudo aqui em forma embedded
     
     
@@ -25,7 +28,7 @@ class TagType(me.Document):
     name = me.StringField()
     tagtype_id = me.SequenceField()
 
-class TagProp(me.Document):
+class TagProp(me.DynamicDocument):
     """
         Universal tag properties 
     """
@@ -63,8 +66,10 @@ class Dataset(me.Document):
     description = me.StringField()
     data_origin = me.ReferenceField(DataOrigin)
 
-class Val(me.DynamicDocument):
-    pass
+class Val(me.EmbeddedDocument):
+    tag = me.ReferenceField(Tag)
+    val = me.FloatField()
+    ue = me.ReferenceField(UE)
 
 class TagVal(me.Document):
     tag = me.ReferenceField(Tag)
@@ -76,11 +81,18 @@ class TagVal(me.Document):
     
     
     
+    
 class Component(me.Document):
     name = me.StringField() 
     data_origin_id = me.SequenceField()
     description = me.StringField()
     related_docs = me.ListField()
     meta = {}
+
+class Curve(me.Document):
+    tags = me.ListField(me.ReferenceField(Tag))
+    values = me.ListField(me.EmbeddedDocumentField(Val))
+    
+    
     
     

@@ -92,6 +92,34 @@ class ValiLoader(Loader):
     # 3754 
     def get_runs(self):
         self.change_database('ANGRA1_DVR')
+        query = """
+            SELECT  *
+            FROM [ANGRA1_DVR].[dbo].[Runs]
+      """
+        dados_runs, col_runs = self.execute_sql(query)
+        print(dados_runs, col_runs)
+        query = "SELECT Tags.Name ,Runs.Run, sum (TagValues.Measurement) as Measurement FROM TagValues LEFT JOIN Tags on Tags.TagID = TagValues.TagID LEFT JOIN Runs  on Runs.Run = TagValues.Run where Tags.Comment = '' and Tags.Consolidation is null group by Runs.Run, Tags.Name order by Runs.Run asc, Tags.Name" 
+        dados_runvalues, col_runvalues = self.execute_sql(query)
+        col_values = []
+        run_id_temp = 1
+        dados_runs_final = []
+        for run in dados_runs:
+            run_data = run
+            run_id = run[0]
+            for rv in dados_runvalues:
+                if (run_id_temp == run_id):
+                    col_values.append(rv[0])
+                if rv[1] > run_id: 
+                    break
+                elif rv[1] == run_id:
+                    run_data.append(rv[2])
+                
+            dados_runs_final.append(run_data)
+        col_runs = col_runs + col_values
+        print(dados_runs_final)
+        print(col_runs)
+        
+        
         
     def get_sica1sql_values(self):
         self.change_database('SICA1_SQL')
@@ -102,6 +130,28 @@ class ValiLoader(Loader):
         #print(query)
         return self.execute_sql(query)
     
+
+    
+    
+    def get_angra1dvr_values(self):
+        self.change_database('ANGRA1_DVR')
+        query = """
+            SELECT  
+            FROM [ANGRA1_DVR].[dbo].[TagValues] left join [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID 
+            WHERE Comment != ''
+            """
+        #print(query)
+        return self.execute_sql(query)
+    
+    def get_angra1dvr_ue(self):
+        self.change_database('ANGRA1_DVR')
+        query = """
+            SELECT  Tags.TagID, Tags.Name, Tags.Comment, Tags.Consolidation, PhysUnits.Name as UE, Tags.PhysUnitID
+            FROM [ANGRA1_DVR].[dbo].[Tags] left join [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID 
+            WHERE Comment != ''
+            """
+        #print(query)
+        return self.execute_sql(query)
     
     def execute_sql(self, query):
         self.cursor.execute(query)
@@ -147,8 +197,15 @@ class ValiLoader(Loader):
         df_mea = pd.DataFrame(dados_mea, columns = colunas)
         #df_mea.columns = colunas
         return df_mea
-class SicaFileLoader(Loader):
-    pass
+
+
+class SicaLoader(Loader):
+    def __init__(self, **kwargs):
+        pass
+    def get_sica_tags(self, file_path):
+        pass
+    def read_sica_file(self, file_path):
+        pass
 
 
 class MongoLoader(Loader):
@@ -158,8 +215,18 @@ class MongoLoader(Loader):
         
     def drop_database_test(self, database):
         self.connection.connection.drop_database(database)
+
+class PepseLoader(Loader):
+    pass 
+
+class UprateFilesLoader(Loader):
+    #TODO: ORGANIZAR os dados no arquivo
+    pass
     
-    
+loader = ValiLoader()
+loader.get_runs()
+
+
 '''
 cursor.execute("SELECT @@version;") 
 row = cursor.fetchone() 
