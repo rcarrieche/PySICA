@@ -112,7 +112,9 @@ class ValiLoader(Loader):
                 if rv[1] > run_id: 
                     break
                 elif rv[1] == run_id:
+                    print(run_data)
                     run_data.append(rv[2])
+                    print(run_data)
                 
             dados_runs_final.append(run_data)
         col_runs = col_runs + col_values
@@ -135,21 +137,14 @@ class ValiLoader(Loader):
     
     def get_angra1dvr_values(self):
         self.change_database('ANGRA1_DVR')
-        query = """
-            SELECT  
-            FROM [ANGRA1_DVR].[dbo].[TagValues] left join [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID 
-            WHERE Comment != ''
-            """
+        query = "SELECT  Tags.Name, TagValues.* FROM TagValues left join Runs on TagValues.Run = Runs.Run left join Tags on TagValues.TagID = Tags.TagID WHERE Tags.Consolidation is not null"
+            
         #print(query)
         return self.execute_sql(query)
     
     def get_angra1dvr_ue(self):
         self.change_database('ANGRA1_DVR')
-        query = """
-            SELECT  Tags.TagID, Tags.Name, Tags.Comment, Tags.Consolidation, PhysUnits.Name as UE, Tags.PhysUnitID
-            FROM [ANGRA1_DVR].[dbo].[Tags] left join [ANGRA1_DVR].[dbo].[PhysUnits] on Tags.PhysUnitID = PhysUnits.PhysUnitID 
-            WHERE Comment != ''
-            """
+        query = "SELECT PhysUnitID ,[Name] FROM [PhysUnits]"
         #print(query)
         return self.execute_sql(query)
     

@@ -44,7 +44,9 @@ def import_vali_mea():
     origin = odm.DataOrigin.objects(name__contains=origin_name).first()
     
     # import physical units
-    
+    dados_ue, col_ue = vali_loader.get_sica1sql_ue()
+    for dado in dados_ue:
+        ue = odm.UE(name=dado[0], original_id = dado[1], data_origin = origin)
     
     # insere tags
     dados_tag_mea, colunas_tag_mea = vali_loader.get_sica1sql_tags()
@@ -57,7 +59,7 @@ def import_vali_mea():
     # definindo dataset
     dataset = odm.Dataset(name = 'SICA1_SQL DATASET TESTE', data_origin = origin).save()
     
-    """
+    
     # importando dados do SICA1_SQL
     dados_mea, colunas_mea = vali_loader.get_sica1sql_values()
     for dado in dados_mea:
@@ -71,7 +73,7 @@ def import_vali_mea():
             tagval.values.update({col_fmt:val})
             #setattr(tagval, coluna.upper())
         tagval.save()
-"""
+
 
 
 def import_vali_dvr():
@@ -82,6 +84,12 @@ def import_vali_dvr():
     origin_name = 'ANGRA1_DVR'
     origin = odm.DataOrigin.objects(name__contains=origin_name).first()
     
+    # import physical units
+    dados_ue, col_ue = vali_loader.get_angra1dvr_ue()
+    for dado in dados_ue:
+        ue = odm.UE(name=dado[0], original_id = dado[1], data_origin = origin)
+        ue.save()
+        
     # import tags
     dados_tag_vali, colunas_tag_vali = vali_loader.get_angra1dvr_tags()
     for dado in dados_tag_vali:
@@ -89,13 +97,24 @@ def import_vali_dvr():
         tag.data_origin = origin
         tag.save()
         
-    # import physical units
+    
     
     # definindo dataset
     dataset = odm.Dataset(name = 'ANGRA1_DVR DATASET TESTE', data_origin = origin).save()
     
     # import runs
-    dados_run, colunas_run = vali_loader.get_angra1dvr_runs()
+    dados_run, colunas_run = vali_loader.get_runs()
+    for dado in dados_run:
+        run = odm.Run(
+            date = dado[colunas_run.index('Date')]
+            ,original_id = dado[colunas_run.index('Run')]
+            ,dataset = dataset
+        )
+        run.values = {}
+        for val, coluna in zip(dado, colunas_run):
+            col_fmt = tagficator(coluna)
+            run.values.update({col_fmt:val})
+        run.save()    
     
      # definindo dataset
     dataset = odm.Dataset(name = 'ANGRA1_DVR DATASET TESTE', data_origin = origin).save()

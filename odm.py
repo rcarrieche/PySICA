@@ -10,7 +10,7 @@ class Run(me.Document): # compatibilidade com Vali para conversão
     version = me.StringField()
     original_id = me.IntField()
     values = me.DictField()
-    dataset_id = me.ReferenceField('Dataset')
+    dataset = me.ReferenceField('Dataset')
     # TODO: procurar as propriedades do run na lista de tags e inserir tudo aqui em forma embedded
     
     
@@ -20,6 +20,8 @@ class UE(me.Document):
     ue_id = me.SequenceField()
     same_as = me.ReferenceField('UE')
     cannonical = me.StringField()
+    original_id = me.IntField()
+    data_origin = me.ReferenceField('DataOrigin')
     
 class TagType(me.Document):
     """
@@ -52,7 +54,9 @@ class Tag(me.Document):
     tag_properties = me.ReferenceField(TagProp)
     data_origin = me.ReferenceField('DataOrigin')
     kks = me.StringField()
-    
+    meta = {
+        'indexes' : ['name', 'data_origin' ]
+    }
 
 class DataOrigin(me.Document):
     name = me.StringField()
@@ -66,7 +70,7 @@ class Dataset(me.Document):
     description = me.StringField()
     data_origin = me.ReferenceField(DataOrigin)
 
-class Val(me.EmbeddedDocument):
+class PropVal(me.EmbeddedDocument):
     tag = me.ReferenceField(Tag)
     val = me.FloatField()
     ue = me.ReferenceField(UE)
@@ -78,7 +82,10 @@ class TagVal(me.Document):
     #val = me.EmbeddedDocumentField(Val)
     values = me.DictField()
     val = me.FloatField()
-    
+    run = me.ReferenceField(Run)
+    meta = {
+        'indexes' : ['tag', 'date']
+    }
     
     
     
@@ -91,7 +98,7 @@ class Component(me.Document):
 
 class Curve(me.Document):
     tags = me.ListField(me.ReferenceField(Tag))
-    values = me.ListField(me.EmbeddedDocumentField(Val))
+    values = me.ListField(me.EmbeddedDocumentField(PropVal))
     
     
     
