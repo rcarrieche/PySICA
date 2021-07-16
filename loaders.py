@@ -97,7 +97,7 @@ class ValiLoader(Loader):
             FROM [ANGRA1_DVR].[dbo].[Runs]
       """
         dados_runs, col_runs = self.execute_sql(query)
-        print(dados_runs, col_runs)
+        #print(dados_runs, col_runs)
         query = "SELECT Tags.Name ,Runs.Run, sum (TagValues.Measurement) as Measurement FROM TagValues LEFT JOIN Tags on Tags.TagID = TagValues.TagID LEFT JOIN Runs  on Runs.Run = TagValues.Run where Tags.Comment = '' and Tags.Consolidation is null group by Runs.Run, Tags.Name order by Runs.Run asc, Tags.Name" 
         dados_runvalues, col_runvalues = self.execute_sql(query)
         col_values = []
@@ -112,14 +112,12 @@ class ValiLoader(Loader):
                 if rv[1] > run_id: 
                     break
                 elif rv[1] == run_id:
-                    print(run_data)
+                    #print(run_data)
                     run_data.append(rv[2])
-                    print(run_data)
+                    #print(run_data)
                 
             dados_runs_final.append(run_data)
         col_runs = col_runs + col_values
-        print(dados_runs_final)
-        print(col_runs)
         
         
         
@@ -145,6 +143,12 @@ class ValiLoader(Loader):
     def get_angra1dvr_ue(self):
         self.change_database('ANGRA1_DVR')
         query = "SELECT PhysUnitID ,[Name] FROM [PhysUnits]"
+        #print(query)
+        return self.execute_sql(query)
+    
+    def get_sica1sql_ue(self):
+        self.change_database('SICA1_SQL')
+        query = "SELECT distinct [UE] FROM [SICA1_SQL].[dbo].[TAG_DEF]"
         #print(query)
         return self.execute_sql(query)
     

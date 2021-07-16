@@ -26,7 +26,6 @@ def populate_origin():
     initial_origins = ['SICA1_SQL', 'ANGRA1_DVR', 'SICA_FILE', 'UPRATE']
     for origin in initial_origins:
         data_origin = odm.DataOrigin(name=origin, description=origin)
-        print(data_origin)
         data_origin.save()
         
         
@@ -46,13 +45,15 @@ def import_vali_mea():
     # import physical units
     dados_ue, col_ue = vali_loader.get_sica1sql_ue()
     for dado in dados_ue:
-        ue = odm.UE(name=dado[0], original_id = dado[1], data_origin = origin)
+        ue = odm.UE(name=dado[0], data_origin = origin)
     
     # insere tags
     dados_tag_mea, colunas_tag_mea = vali_loader.get_sica1sql_tags()
     for dado in dados_tag_mea:
         tag = odm.Tag(name=dado[0], description=dado[1], ue=dado[2])
         tag.data_origin = origin
+        ue = odm.UE.objects(name = dado[2]).first()
+        tag.UE = ue
         tag.save()
     
     
@@ -95,6 +96,8 @@ def import_vali_dvr():
     for dado in dados_tag_vali:
         tag = odm.Tag(name=dado[1], description=dado[2], ue=dado[4])
         tag.data_origin = origin
+        ue = odm.UE.objects(name = dado[4]).first()
+        tag.UE = ue
         tag.save()
         
     
@@ -116,8 +119,6 @@ def import_vali_dvr():
             run.values.update({col_fmt:val})
         run.save()    
     
-     # definindo dataset
-    dataset = odm.Dataset(name = 'ANGRA1_DVR DATASET TESTE', data_origin = origin).save()
     
     # importando dados do ANGRA1_DVR
     dados_mea, colunas_mea = vali_loader.get_angra1dvr_values()
@@ -135,14 +136,14 @@ def import_vali_dvr():
     
 def update_tag_same_as():
     mongo_loader = ld.MongoLoader(database = 'Teste')
-    qs_vali = odm.Tag.objects.filter(data_origin__in=odm.DataOrigin.objects(name='ANGRA1_DVR'))
-    print(qs_vali)
-    for tag in qs_vali:
-        #print(tag)
-        tags_outros = odm.Tag.objects(name=tag.name, data_origin__name__ne='ANGRA1_DVR')
-        for ts in tags_outros:
-            tag.tag_same_as.append(ts)
-            ts.tag_same_as.append(tag)
+    data_origins = odm.Tag.objects()
+    for origin in data_origins:
+        qs = odm.Tag.objects.filter(data_origin__in=odm.DataOrigin.objects(name=origin.name))
+        for tag in qs:
+            tags_outros = odm.Tag.objects(name=tag.name, data_origin__name__ne=origin.name)
+            for ts in tags_outros:
+                tag.tag_same_as.append(ts)
+                # ts.tag_same_as.append(tag)
             
             
 def update_tag_components():
@@ -170,11 +171,14 @@ def import_LSR():
     pass
 
 
-
 drop_database()
 populate_origin()
 test_origin()
 import_vali_mea()
 import_vali_dvr()
-
 update_tag_same_as()
+
+import winsound
+duration = 2000  # milliseconds
+freq = 440  # Hz
+winsound.Beep(freq, duration)
