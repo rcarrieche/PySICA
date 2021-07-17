@@ -2,6 +2,7 @@ import pyodbc
 import datetime
 from connections import ValiConnection, MongoConnection
 import pandas as pd
+import odm
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
@@ -14,6 +15,13 @@ class Loader(object):
     
     def __init__(self):
         pass
+    
+    def get_tags(self):
+        pass
+    
+    def get_tagvalues(self, list_tags):
+        pass
+    
     
 class ValiLoader(Loader):
     """
@@ -118,7 +126,8 @@ class ValiLoader(Loader):
                 
             dados_runs_final.append(run_data)
         col_runs = col_runs + col_values
-        
+        print(col_runs)
+        return dados_runs_final, col_runs
         
         
     def get_sica1sql_values(self):
@@ -135,7 +144,7 @@ class ValiLoader(Loader):
     
     def get_angra1dvr_values(self):
         self.change_database('ANGRA1_DVR')
-        query = "SELECT  Tags.Name, TagValues.* FROM TagValues left join Runs on TagValues.Run = Runs.Run left join Tags on TagValues.TagID = Tags.TagID WHERE Tags.Consolidation is not null"
+        query = "SELECT  Tags.Name, Runs.Date, TagValues.Validated, TagValues.* FROM TagValues left join Runs on TagValues.Run = Runs.Run left join Tags on TagValues.TagID = Tags.TagID WHERE Tags.Consolidation is not null"
             
         #print(query)
         return self.execute_sql(query)
@@ -175,7 +184,7 @@ class ValiLoader(Loader):
         # print(colunas)
         return resultados
     
-    def get_vali_dvr22222(self, list_tags, inicio, fim):
+    def get_vali_dvr(self, list_tags, inicio, fim):
         """ Retorna tupla resultados, colunas. Este será o padrão das consultas """
         format_string = '%Y-%m-%d %H:%M:%S'
         dt_inicio = datetime.datetime.strptime(inicio, format_string)
@@ -204,7 +213,8 @@ class SicaLoader(Loader):
     def get_sica_tags(self, file_path):
         pass
     def read_sica_file(self, file_path):
-        pass
+        arquivo = pd.read_fwf(file_path)
+        print(arquivo)
 
 
 class MongoLoader(Loader):
@@ -213,7 +223,18 @@ class MongoLoader(Loader):
         self.db = self.connection.db
         
     def drop_database_test(self, database):
+        # TODO: 
         self.connection.connection.drop_database(database)
+        
+    def get_tags(self, tagname_list, **kwargs):
+        tags_qs = odm.Tag.objects(name__in = tagname_list, **kwargs)
+        return tags_qs
+        
+    def get_values(self, tag_list, **kwargs):
+        pass
+    
+    
+    
 
 class PepseLoader(Loader):
     pass 
@@ -221,26 +242,13 @@ class PepseLoader(Loader):
 class UprateFilesLoader(Loader):
     #TODO: ORGANIZAR os dados no arquivo
     pass
-    
-loader = ValiLoader()
-loader.get_runs()
 
 
-'''
-cursor.execute("SELECT @@version;") 
-row = cursor.fetchone() 
-while row: 
-    print(row[0])
-    row = cursor.fetchone()
-
-
-cursor.execute("SELECT * from TAG_DEF") 
-lista_tags = []
-row = cursor.fetchone() 
-while row: 
-    print(row[0])
-    row = cursor.fetchone()
-    lista_tags.append(row)
-    
-print(lista_tags)
-'''
+loader = MongoLoader(database='Teste')
+tags = loader.get_tags(['PI1980A', 'PI1981A'])
+print(tags)
+for tag in tags:
+    print("name: {}      origin: {}".format(tag.name, tag.data_origin.name))
+    print("desc: {}".format(tag.description))
+    print("UE  : {}".format(tag.ue.name))
+    print("")

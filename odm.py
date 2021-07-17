@@ -84,11 +84,11 @@ class TagVal(me.Document):
     val = me.FloatField()
     run = me.ReferenceField(Run)
     meta = {
-        'indexes' : ['tag', 'date']
+        'indexes' : ['tag', 'date', 'dataset']
     }
     
     
-    
+# Descrição dos componentes    
 class Component(me.Document):
     name = me.StringField() 
     data_origin_id = me.SequenceField()
@@ -96,10 +96,33 @@ class Component(me.Document):
     related_docs = me.ListField()
     meta = {}
 
+# upload das curvas 
 class Curve(me.Document):
     tags = me.ListField(me.ReferenceField(Tag))
     values = me.ListField(me.EmbeddedDocumentField(PropVal))
     
+#---------------------------------#
+
+# classes do config
+
+class ETO(me.Document):
+    pass
+
+class PMD(me.Document):
+    pass
+
+class ListaSeletiva(me.Document):
+    pass
+
+class SIT(me.Document):
+    pass
+
     
+
     
+
+    
+
+
+
     

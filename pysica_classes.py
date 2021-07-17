@@ -73,7 +73,7 @@ class Dataset(object):
             for k, v in kwargs.items():
                 setattr(self, k, v)
         
-    def load_vali_mea(self, list_tags, start, end):
+    def load_vali_mea_df(self, list_tags, start, end):
         loader = loaders.ValiLoader(database = 'SICA1_SQL')
         df_mea = loader.get_vali_mea(list_tags, start, end)
         self.df = df_mea

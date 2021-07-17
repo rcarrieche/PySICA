@@ -21,9 +21,24 @@ class Pysica(object):
         self.dict_tags.update({'blank': Tag('blank', titulo='Tag em branco para iniciar tags')})
         self.dict_curvas = {}
        
-    def gera_dataset(self, datetime_inicio, datetime_fim):
+    def create_dataset(self, tags, **kwargs):
+        """
+        Parameters
+        ----------
+        tags : TYPE
+            DESCRIPTION.
+        **kwargs : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         #insere na lista de datasets
-        pass
+        dataset = Dataset('Teste dataset', *kwargs)
+        return dataset
+        
     def load_dataset_sica(self, caminho, dataset = None, **kwargs): #insere um arquivo txt do SICA no dataset
         if(not dataset):
             titulo = kwargs['titulo'] if kwargs['titulo'] else 'Teste Pandas to SICA'
@@ -55,7 +70,7 @@ class Pysica(object):
     
     def save(save_file = ''):
         if save_file: self.save_file = save_file
-        # TODO: json_dumps de todos os objetos
+        # TODO: json_dumps de todos os objetos 
         
     def load(load_file):
         self.save_file  = load_file

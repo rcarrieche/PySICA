@@ -18,10 +18,12 @@ def tagficator(tagname):
     return tagname.strip('[]').replace('-.', '_').upper()
 
 def drop_database():
+    print("Descartando banco anterior")
     mongo_loader = ld.MongoLoader(database = 'Teste')
     mongo_loader.db.drop_database('Teste')
 
 def populate_origin():
+    print("inserindo origens iniciais")
     mongo_loader = ld.MongoConnection(database = 'Teste')
     initial_origins = ['SICA1_SQL', 'ANGRA1_DVR', 'SICA_FILE', 'UPRATE']
     for origin in initial_origins:
@@ -46,6 +48,7 @@ def import_vali_mea():
     dados_ue, col_ue = vali_loader.get_sica1sql_ue()
     for dado in dados_ue:
         ue = odm.UE(name=dado[0], data_origin = origin)
+        ue.save()
     
     # insere tags
     dados_tag_mea, colunas_tag_mea = vali_loader.get_sica1sql_tags()
@@ -88,7 +91,7 @@ def import_vali_dvr():
     # import physical units
     dados_ue, col_ue = vali_loader.get_angra1dvr_ue()
     for dado in dados_ue:
-        ue = odm.UE(name=dado[0], original_id = dado[1], data_origin = origin)
+        ue = odm.UE(name=dado[1], original_id = dado[0], data_origin = origin)
         ue.save()
         
     # import tags
@@ -135,14 +138,19 @@ def import_vali_dvr():
         tagval.save()
     
 def update_tag_same_as():
+    # TODO: não repetir tags
     mongo_loader = ld.MongoLoader(database = 'Teste')
-    data_origins = odm.Tag.objects()
+    data_origins = odm.DataOrigin.objects()
     for origin in data_origins:
-        qs = odm.Tag.objects.filter(data_origin__in=odm.DataOrigin.objects(name=origin.name))
+        qs = odm.Tag.objects(data_origin__in=odm.DataOrigin.objects(name=origin.name))
+        print("Origem: "+origin.name)
         for tag in qs:
-            tags_outros = odm.Tag.objects(name=tag.name, data_origin__name__ne=origin.name)
+            print("Atualizando tag "+tag.name)
+            tags_outros = odm.Tag.objects(name=tag.name, data_origin__ne=odm.DataOrigin.objects(name=origin.name).first())
             for ts in tags_outros:
-                tag.tag_same_as.append(ts)
+                print("inserindo tag {} de {} em {}".format(ts.name, ts.data_origin.name, tag.name))
+                #tag.tag_same_as.append(ts)
+                tag.update(push__tag_same_as=ts)
                 # ts.tag_same_as.append(tag)
             
             
@@ -150,6 +158,9 @@ def update_tag_components():
     pass
     
 def import_sica_tags():
+    pass
+
+def import_sica_values():
     pass
 
 def import_uprate():
@@ -170,13 +181,16 @@ def import_LV():
 def import_LSR():
     pass
 
-
+"""
 drop_database()
 populate_origin()
 test_origin()
 import_vali_mea()
+
 import_vali_dvr()
 update_tag_same_as()
+"""
+
 
 import winsound
 duration = 2000  # milliseconds
