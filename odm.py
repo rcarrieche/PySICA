@@ -42,6 +42,7 @@ class Tag(me.Document):
     name = me.StringField()
     alt_names = me.ListField(me.StringField())
     tag_id = me.SequenceField()
+    original_id = me.IntField()
     description = me.StringField()
     comment = me.StringField()
     tag_parent = me.ListField(me.ReferenceField('Tag'))
@@ -117,7 +118,16 @@ class ListaSeletiva(me.Document):
 class SIT(me.Document):
     pass
 
+
+# ------ documentos --------
+
+class Fluxograma(me.DynamicDocument):
+    name = me.StringField()
+    sincronia_id = me.StringField()
     
+    pass
+
+
 
     
 

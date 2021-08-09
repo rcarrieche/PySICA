@@ -3,6 +3,7 @@ import datetime
 from connections import ValiConnection, MongoConnection
 import pandas as pd
 import odm
+import os
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
@@ -210,14 +211,41 @@ class ValiLoader(Loader):
 class SicaLoader(Loader):
     def __init__(self, **kwargs):
         pass
-    def get_sica_tags(self, file_path):
+    def get_sica_tags(self, file_path): 
         pass
     def read_sica_file(self, file_path):
         arquivo = pd.read_fwf(file_path)
         print(arquivo)
+    def read_sica_tags(self, file_path):
+        arquivo = pd.read_fwf(file_path)
+        return arquivo
+    def read_sica_batch(self, dir_path):
+        """
+        #aqui reaproveitamos o código legado
+        leituras = []
+        # caminhos = ["D:\\ValiScheduler\\dados SICA\\07052020", "D:\\ValiScheduler\\dados SICA\\09112019", "D:\\ValiScheduler\\dados SICA\\16072020", "D:\\ValiScheduler\\dados SICA\\25052019"]
+        
+        # caminhos = ["D:\ValiScheduler\dados SICA\HD valves november"]
+        #caminhos = ["D:\ValiScheduler\dados SICA\FW data last"]
+        caminhos = ["D:\ValiScheduler\dados SICA\Dados SICA 2021-03-04"]
+        
+        
+        for caminho in caminhos:
+            arquivos = os.listdir(caminho)
+            for arquivo in arquivos:
+                l = ps.read_sica_runs(caminho+"\\"+arquivo)
+                leituras = leituras + l
+                pass
+        """
+        
+        # Ou fazer assim:
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                if file.endswith(".txt"):
+                     print(os.path.join(root, file))
+                     self.read_sica_file(file)
 
-
-class MongoLoader(Loader):
+class MongoLoader(Loader):  # acho que nem precisa disto, basta usar direto o pymongo e abrir a conexão no __init__
     def __init__(self, **kwargs):
         self.connection = MongoConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
         self.db = self.connection.db
@@ -234,7 +262,6 @@ class MongoLoader(Loader):
         pass
     
     
-    
 
 class PepseLoader(Loader):
     pass 
@@ -244,11 +271,24 @@ class UprateFilesLoader(Loader):
     pass
 
 
-loader = MongoLoader(database='Teste')
-tags = loader.get_tags(['PI1980A', 'PI1981A'])
+
+loader = SicaLoader()
+
+
+"""
+loader = MongoLoader(database='Teste2')
+tags = loader.get_tags(['PI1980A', 'PI1981A', 'TE6540'])
 print(tags)
 for tag in tags:
     print("name: {}      origin: {}".format(tag.name, tag.data_origin.name))
     print("desc: {}".format(tag.description))
-    print("UE  : {}".format(tag.ue.name))
+    print(tag.__dict__)
+    try:
+        print("UE  : {}".format(tag.ue.name))
+        print("UE _id : {}".format(tag.ue))
+    except Exception as e:
+        print("Erro de referência!")
+        print(e)
     print("")
+    
+"""
