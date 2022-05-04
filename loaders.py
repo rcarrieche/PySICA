@@ -4,11 +4,13 @@ from connections import ValiConnection, MongoConnection
 import pandas as pd
 import odm
 import os
+
+from matplotlib import pyplot as plt
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
 
-
+MONGO_DATABASE = 'Teste4'
 class Loader(object):
     """ 
     Objetos responsáveis por usar as conexões e entregar os dados em formato dataframe aos datasets
@@ -142,14 +144,6 @@ class ValiLoader(Loader):
     
 
     
-    
-    def get_angra1dvr_values(self):
-        self.change_database('ANGRA1_DVR')
-        query = "SELECT  Tags.Name, Runs.Date, TagValues.Validated, TagValues.* FROM TagValues left join Runs on TagValues.Run = Runs.Run left join Tags on TagValues.TagID = Tags.TagID WHERE Tags.Consolidation is not null"
-            
-        #print(query)
-        return self.execute_sql(query)
-    
     def get_angra1dvr_ue(self):
         self.change_database('ANGRA1_DVR')
         query = "SELECT PhysUnitID ,[Name] FROM [PhysUnits]"
@@ -216,6 +210,8 @@ class SicaLoader(Loader):
     def read_sica_file(self, file_path):
         arquivo = pd.read_fwf(file_path)
         print(arquivo)
+        mongo_loader = MongoLoader(database = MONGO_DATABASE)
+        
     def read_sica_tags(self, file_path):
         arquivo = pd.read_fwf(file_path)
         return arquivo
@@ -239,11 +235,13 @@ class SicaLoader(Loader):
         """
         
         # Ou fazer assim:
+        dados_sica = []
         for root, dirs, files in os.walk(dir_path):
             for file in files:
                 if file.endswith(".txt"):
                      print(os.path.join(root, file))
-                     self.read_sica_file(file)
+                     dados_sica.append(self.read_sica_file(file))
+        return dados_sica
 
 class MongoLoader(Loader):  # acho que nem precisa disto, basta usar direto o pymongo e abrir a conexão no __init__
     def __init__(self, **kwargs):

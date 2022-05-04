@@ -12,11 +12,12 @@ import pint
 # from . import lalala.py 
 import sys, os
 import datetime
-import odm
+import odm2 as odm
 import pymongo as pm
 import pandas as pd
 
-#MONGO_DATABASE = 'Teste_1'
+# MONGO_DATABASE = 'Teste_1'
+MONGO_DATABASE = 'TagDatabase1'
 
 def tagficator(tagname):
     return tagname.strip('[]').replace('-.', '_').upper()
@@ -29,7 +30,7 @@ def drop_database():
 def populate_origin():
     print("inserindo origens iniciais")
     mongo_loader = ld.MongoConnection(database = MONGO_DATABASE)
-    initial_origins = ['SICA1_SQL', 'ANGRA1_DVR', 'SICA_FILE', 'UPRATE']
+    initial_origins = ['SICA1_SQL', 'ANGRA1_DVR', 'SICA_FILE', 'UPRATE', 'OVATION', 'SICA_DEF']
     for origin in initial_origins:
         data_origin = odm.DataOrigin(name=origin, description=origin)
         data_origin.save()
@@ -38,6 +39,54 @@ def populate_origin():
 def test_origin():
     data_origin = odm.DataOrigin.objects()
     print(data_origin)
+    
+def import_vali_tags():
+    vali_loader = ld.ValiLoader()
+    mongo_loader = ld.MongoLoader(database = MONGO_DATABASE) 
+    
+    
+    # definindo origem
+    origin_name = 'SICA1_SQL'
+    origin = odm.DataOrigin.objects(name__contains=origin_name).first()
+    
+    # import physical units
+    dados_ue, col_ue = vali_loader.get_sica1sql_ue()
+    for dado in dados_ue:
+        ue = odm.UE(name=dado[0], data_origin = origin)
+        ue.save()
+    
+    # insere tags
+    dados_tag_mea, colunas_tag_mea = vali_loader.get_sica1sql_tags()
+    for dado in dados_tag_mea:
+        tag = odm.Tag(name=dado[0], description=dado[1], ue=dado[2])
+        tag.data_origin = origin
+        ue = odm.UE.objects(name = dado[2], data_origin = origin).first()
+        tag.ue = ue
+        tag.save()
+        
+    
+    vali_loader = ld.ValiLoader()
+    mongo_loader = ld.MongoLoader(database = MONGO_DATABASE) 
+    
+    # definindo origem
+    origin_name = 'ANGRA1_DVR'
+    origin = odm.DataOrigin.objects(name__contains=origin_name).first()
+    
+    # import physical units
+    dados_ue, col_ue = vali_loader.get_angra1dvr_ue()
+    for dado in dados_ue:
+        ue = odm.UE(name=dado[1], original_id = dado[0], data_origin = origin)
+        ue.save()
+        
+    # import tags
+    dados_tag_vali, colunas_tag_vali = vali_loader.get_angra1dvr_tags()
+    for dado in dados_tag_vali:
+        tag = odm.Tag(name=dado[1], description=dado[2])
+        tag.data_origin = origin
+        ue = odm.UE.objects(name = dado[4], data_origin = origin).first()
+        #print("Tag: {}    Origem: {}        UE Original: {}     UE buscado: {}".format(tag.name, tag.data_origin.name, dado[4], ue.name))
+        tag.ue = ue
+        tag.save()
     
 def import_vali_mea():
     vali_loader = ld.ValiLoader()
@@ -232,7 +281,7 @@ test_origin()
 import_vali_mea()
 
 import_vali_dvr()
-"""
+
 import_sica_tags()
 update_tag_same_as()
 
@@ -242,9 +291,9 @@ import_sica_values()
 normalizar_ue()
 
 """
+
 import winsound
 duration = 2000  # milliseconds
 freq = 440  # Hz
 winsound.Beep(freq, duration)
-"""
 

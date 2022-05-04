@@ -3,8 +3,10 @@ from matplotlib import pyplot
 import pint
 # from . import lalala.py 
 import sys, os
-from pysica_classes import *
+#from pysica_classes import *
+import pysica_classes as psc
 import datetime
+
 
 class Pysica(object):
     un = None
@@ -13,15 +15,18 @@ class Pysica(object):
         self.un = pint.UnitRegistry() # não esquecer de habilitar o pyplot
         self.save_file = save_file
         # inicializar dataset padrão list_datasets. TODO: Carregar dos salvos  
-        self.dict_datasets = {}
-        dataset_blank = Dataset('blank', titulo='Dataset inicial, só pra não ficar em branco')
-        self.dict_datasets.update({'blank':dataset_blank})
+        #self.dict_datasets = {}
+        self.datasets=[]
+        self.using_dataset = None
+        #self.dataset_pointer = None
+        #dataset_blank = psc.Dataset('blank', titulo='Dataset inicial, só pra não ficar em branco')
+        #self.dict_datasets.update({'blank':dataset_blank})
         # inicializa lista de tags 
-        self.dict_tags = {}
-        self.dict_tags.update({'blank': Tag('blank', titulo='Tag em branco para iniciar tags')})
-        self.dict_curvas = {}
+        #self.dict_tags = {}
+        #self.dict_tags.update({'blank': Tag('blank', titulo='Tag em branco para iniciar tags')})
+        #self.dict_curvas = {}
        
-    def create_dataset(self, tags, **kwargs):
+    def create_dataset(self, name = "Teste dataset", list_tags =[], **kwargs):
         """
         Parameters
         ----------
@@ -36,16 +41,21 @@ class Pysica(object):
 
         """
         #insere na lista de datasets
-        dataset = Dataset('Teste dataset', *kwargs)
+        print("?")
+        dataset = psc.Dataset(name, list_tags)
+        self.datasets.append(dataset)
+        self.dataset_i = len(self.datasets) - 1
         return dataset
-        
+
+    
+    # DEPRECATED    
     def load_dataset_sica(self, caminho, dataset = None, **kwargs): #insere um arquivo txt do SICA no dataset
         if(not dataset):
             titulo = kwargs['titulo'] if kwargs['titulo'] else 'Teste Pandas to SICA'
             dataset_obj = Dataset('SICATESTE', titulo = 'Teste Pandas to SICA')
         return dataset_obj
     
-    
+    # DEPRECATED
     def create_dataset_vali(self, list_tags,  start, end, **kwargs): #carrega dados do Vali no dataset
         """
         teste doc

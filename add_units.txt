@@ -1,0 +1,14 @@
+GRC = degC
+TMPH = metric_ton/h
+#KGCM2G = technical_atmosphere; offset: 1 = technical_atmosphere
+KGCM2G = 0.980665*bar
+LPM = liter_per_minute
+C = degC
+GPM = gal/min
+LPM = liters/min
+KW = kW
+M3PH = m**3/h
+MMHGA = mm_Hg
+MVAR = MVA
+PC = dimensionless
+RPM = rpm

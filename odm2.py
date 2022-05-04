@@ -3,33 +3,16 @@ import mongoengine as me
 
 TAG_PROP = ['Measurement', 'Mea_Acc', 'Validated', 'Val_Acc']
 
-class Run(me.Document): # compatibilidade com Vali para conversão
-    run_id = me.SequenceField()
-    date = me.DateTimeField()
-    PDB = me.StringField()
-    version = me.StringField()
-    original_id = me.IntField()
-    values = me.DictField()
-    dataset = me.ReferenceField('Dataset')
-    # TODO: procurar as propriedades do run na lista de tags e inserir tudo aqui em forma embedded
-    
 
-class Unit(me.Document):
+
+class EngUnit(me.Document):
     name = me.StringField()
     unit_id = me.SequenceField()
-    same_as = me.ReferenceField('UE')
-    cannonical = me.StringField()
+    same_as = me.ReferenceField('EngUnit')
+    cannonical_id = me.StringField()
     original_id = me.IntField()
     data_origin = me.ReferenceField('DataOrigin')    
 
-class UE(me.Document):
-    name = me.StringField()
-    ue_id = me.SequenceField()
-    same_as = me.ReferenceField('UE')
-    cannonical = me.StringField()
-    original_id = me.IntField()
-    data_origin = me.ReferenceField('DataOrigin')
-    
 class TagType(me.Document):
     """
         Tipos: component, stream, measurement, run_info, value 
@@ -43,6 +26,7 @@ class TagProp(me.DynamicDocument):
     """
     name = me.StringField()
     tagprop_id = me.SequenceField()
+    eng_unit = me.ReferenceField('EngUnit')
 
 class Tag(me.Document):
     #tagname = me.StringField()
@@ -54,12 +38,12 @@ class Tag(me.Document):
     comment = me.StringField()
     tag_parent = me.ListField(me.ReferenceField('Tag'))
     tag_same_as = me.ListField(me.ReferenceField('Tag'))
-    tag_sibling = me.ListField(me.ReferenceField('Tag'))
+    tag_related = me.ListField(me.ReferenceField('Tag'))
     tag_master = me.ReferenceField('Tag')
     tag_connections = me.ListField(me.ReferenceField('Tag'))
-    ue = me.ReferenceField(UE)
-    tagtype = me.ReferenceField(TagType)
-    tag_properties = me.ReferenceField(TagProp)
+    eng_unit = me.ReferenceField(EngUnit)
+    tag_type = me.ReferenceField(TagType)
+    tag_prop = me.ListField(me.ReferenceField(TagProp))
     data_origin = me.ReferenceField('DataOrigin')
     kks = me.StringField()
     meta = {
@@ -71,6 +55,8 @@ class DataOrigin(me.Document):
     data_origin_id = me.SequenceField()
     description = me.StringField()
     related_docs = me.ListField()
+    parent_origin = me.ReferenceField('DataOrigin')
+
 
 class Dataset(me.Document):
     name = me.StringField()
@@ -79,23 +65,13 @@ class Dataset(me.Document):
     data_origin = me.ReferenceField(DataOrigin)
     tag_list = me.ListField(me.ReferenceField('Tag'))
 
+
 class PropVal(me.EmbeddedDocument):
     tag = me.ReferenceField(Tag)
     val = me.FloatField()
-    ue = me.ReferenceField(UE)
+    eng_unit = me.ReferenceField('EngUnit')
 
-class TagVal(me.Document):
-    tag = me.ReferenceField(Tag)
-    date = me.DateTimeField()
-    #dataset = me.ReferenceField(Dataset)
-    #val = me.EmbeddedDocumentField(Val)
-    values = me.DictField()
-    val = me.FloatField()
-    run = me.ReferenceField(Run)
-    meta = {
-        'indexes' : ['tag', 'date', 'dataset']
-    }
-    
+
     
 # Descrição dos componentes    
 class Component(me.Document):
@@ -114,17 +90,44 @@ class Curve(me.Document):
 
 # classes do config
 
-class ETO(me.Document):
+class ProcessoModificador(me.Document):
     pass
 
-class PMD(me.Document):
+class Eto(me.Document):
+    pass
+
+class Pmd(ProcessoModificador):
+    pass
+
+class Pm(ProcessoModificador):
+    pass
+
+class Pmp(Pm):
+    pass
+
+class Pmi(Pm):
+    pass
+
+class Ppp(Pm):
     pass
 
 class ListaSeletiva(me.Document):
     pass
 
+class ListaMaterial(me.Document):
+    pass
+
 class SIT(me.Document):
     pass
+
+class Documento(me.Document):
+    pass
+
+
+
+class Req(me.Document):
+    pass
+
 
 
 # ------ documentos --------
