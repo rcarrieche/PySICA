@@ -4,13 +4,16 @@ from connections import ValiConnection, MongoConnection
 import pandas as pd
 import odm
 import os
+from constantes import *
+
 
 from matplotlib import pyplot as plt
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
 
-MONGO_DATABASE = 'Teste4'
+
+
 class Loader(object):
     """ 
     Objetos responsáveis por usar as conexões e entregar os dados em formato dataframe aos datasets

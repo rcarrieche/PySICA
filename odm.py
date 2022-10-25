@@ -93,7 +93,7 @@ class TagVal(me.Document):
     val = me.FloatField()
     run = me.ReferenceField(Run)
     meta = {
-        'indexes' : ['tag', 'date', 'dataset']
+        'indexes' : ['tag', 'date']
     }
     
     

@@ -71,6 +71,7 @@ class Dataset(object):
         self.schema = pd.DataFrame()
         self.data_par = pd.DataFrame()
         self.data_var = pd.DataFrame()
+        self.data_run = pd.DataFrame()
 
     def read_tags(self, list_tags = []):
         client = MongoClient()
@@ -104,7 +105,35 @@ class Dataset(object):
         self.list_tags = tags
         return self.schema    
 
-
+    def read_runs(self, list_datas = []):
+        client = MongoClient()
+        db = client.get_database(MONGO_DATABASE)
+        
+        
+        coll_run = db.get_collection('run')
+        #coll_ue = db.get_collection('u_e')
+        #coll_origin = db.get_collection('data_origin')
+        # TODO: DATE_LIST DEVE SER VERificada se tem 2 valores (inicio e fim) ou mais de um valor (datas específicas)
+        format_string = '%Y-%m-%d %H:%M:%S'
+        dt_inicio = datetime.datetime.strptime(list_datas[0], format_string)
+        dt_fim = datetime.datetime.strptime(list_datas[1], format_string)
+        query_run = {"$and":[{"date":{"$gte":dt_inicio}},{"date":{"$lte":dt_fim}}]}
+        dados_runs = coll_run.find(query_run)
+        runs = []
+        for run in dados_runs:
+            run.update(run['values'])
+            runs.append(run)
+      
+        self.data_run = pd.DataFrame(runs)
+        # cast types
+        self.data_run['EXITCODE'] = self.data_run['EXITCODE'].astype('str')
+        #self.data_run['NBAD'] = self.data_run['NBAD'].astype('Int64')
+        #self.data_run['NFLAG'] = self.data_run['NFLAG'].astype('Int64')
+        #self.data_run['date'] = pd.to_datetime(self.data_run['date'], format=format_string) 
+        #self.data_run['date'] = pd.to_datetime(self.data_run['date']) 
+        return self.data_run
+    
+    
     def add_tag(self, tag_id):
         self.list_tags.append(coll_tag.find())
 
@@ -140,7 +169,7 @@ class Dataset(object):
         if not self.list_tags:
             print("Sem tags")
         list_ids = [x["_id"] for x in self.list_tags]
-        print(list_ids)
+        #print(list_ids)
         coll_tagval = db.get_collection('tag_val')
         coll_tag = db.get_collection('tag')
         coll_ue = db.get_collection('u_e')
