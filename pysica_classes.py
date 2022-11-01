@@ -1,62 +1,113 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 20 15:53:45 2022
+
+@author: nato
+"""
+
 import pint 
 import numpy as np
-import loaders
-import odm
+#import loaders
+#import odm
 import pandas as pd
 from pymongo import MongoClient
 from constantes import *
 import datetime
 
 
-#DEPRECATED
-class Curva(object):
-    def __init__(self, curva_id, **kwargs):
-        #variáveis básicas
-        self.curva_id = curva_id
-        self.titulo = ""
-        self.descricao = ""
-        self.title = ""
-        self.description = ""
-        self.ndim = 0
-        self.tags = []
-        # self.x = np.array()
-        # TODO: abstrair melhor essa merda
-        self.ue = [] # vetor de ue de acordo com os tags
-        ue = {'original': '', 'used': ''}
-        self.val = None
-        # self.tags_ = tag
-        self.metadata = []
-        metadata = {'x_tag': None, 'y_tag':None, 'z_tag':None, 'x_options':{}, 'y_options':{}, 'z_options':{}}
-        self.x_values = np.Array()
-        self.y_values = np.Array()
-        self.z_values = np.Array()
-        if(kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
-                
-    def set_values(self, list_tags, list_values):
+class Database(object):
+    def get_origins(self):
+        client = MongoClient()
+        db = client.get_database(MONGO_DATABASE)
+        
+        coll_tag = db.get_collection('tag')
+        coll_origin = db.get_collection('data_origin')
+        dados_origins = coll_origin.find()
+        origins = []
+        for origin in dados_origins:
+            query_total_tags = {"data_origin":origin["_id"]}
+            total_tags = len(list(coll_tag.find(query_total_tags)))
+            origin.update({"total_tags":total_tags})
+            origins.append(origin)
+        return pd.DataFrame(origins)
+    
+    def get_tags(self, list_tag_ids = [], list_tag_names = [], list_origin_ids = [], associated_tags = False):
+        client = MongoClient()
+        db = client.get_database(MONGO_DATABASE)
+
+        
+        coll_tag = db.get_collection('tag')
+        coll_ue = db.get_collection('u_e')
+        coll_origin = db.get_collection('data_origin')
+        coll_tagval = db.get_collection("tag_val")
+        
+        query_tags = {"$or":[{"name":{"$in":list_tag_names}}, {"_id":{"$in": list_tag_ids}}, {"name":{"$in":list_tag_names}}]}
+        if list_origin_ids:
+            aaa = {"$and": [{"data_origin":{"$in":list_origin_ids}}]}
+            query_tags.update(aaa)
+        dados_tags = coll_tag.find(query_tags)
+        tags = []
+        for tag in dados_tags:
+            #print(tag)
+            ue = coll_ue.find_one({"_id":tag['ue']})
+            origin = coll_origin.find_one({"_id":tag['data_origin']})
+            total_values = len(list(coll_tagval.find({"tag":tag["_id"]})))
+            tag.update({'ue':ue['name'], 'origin_name':origin['name'], 'total_values':total_values})
+            tags.append(tag)
+      
+        return pd.DataFrame(tags)
+    
+    
+    def get_tag(self, tag_id):
         pass
+    
+    def get_dataset(self, dataset_id):
+        pass
+    
+    
+    
+    def get_datasets(self):
+        client = MongoClient()
+        db = client.get_database(MONGO_DATABASE)
 
-# DEPRECATED        
-class Tag(object):
-    def __init__(self, tagname, **kwargs):
-        self.tagname = tagname
-        self.tag_id = ""
-        self.titulo = ""
-        self.descricao = ""
-        self.title = ""
-        self.description = ""
-        self.origem_id = ""
-        self.ue_original = ""
-        self.metadata = {}
-        self.related_to = {} # tags relacionados tag_id: tag_obj
-        self.belongs_to = {} # tag do componente pai tag_id: tag_obj
-        self.same_as = {} # tag_id: tag_obj
-        if(kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
-
-
+        
+        coll_tag = db.get_collection('tag')
+        coll_dataset = db.get_collection('dataset')
+        dados_dataset = coll_dataset.find()
+        datasets = []
+        for d in dados_dataset:
+            list_tag_ids = []
+            for t in d["tags"]:
+                list_tag_ids.append(t)
+            string_tags = "";
+            query_tags = {"_id": {"$in":list_tag_ids}}
+            dados_tags = coll_tag.find(query_tags)
+            i = 0
+            for t in dados_tags:
+                string_tags = string_tags + " " + t["name"]+"\n"
+                i = i+1
+                #print(t)
+                #print(string_tags)
+            #d.update({"tags":string_tags})
+            d.update({"tags":i})
+            #print(d)
+            #print(string_tags)
+            #print(list_tag_ids)
+            datasets.append(d)
+        return pd.DataFrame(datasets)
+        
+    def import_tags(self, filename):
+        pass
+    
+    def import_sica_tags(self, filename):
+        pass
+    
+    def import_vali_tags(self, filename):
+        pass
+    
+    def export_excel(self):
+        pass
+    
 
 class Dataset(object):
 
@@ -113,7 +164,7 @@ class Dataset(object):
         coll_run = db.get_collection('run')
         #coll_ue = db.get_collection('u_e')
         #coll_origin = db.get_collection('data_origin')
-        # TODO: DATE_LIST DEVE SER VERificada se tem 2 valores (inicio e fim) ou mais de um valor (datas específicas)
+        # TODO: DATE_LIST DEVE SER VERificada se tem 2 valores (ini....cio e fim) ou mais de um valor (datas específicas)
         format_string = '%Y-%m-%d %H:%M:%S'
         dt_inicio = datetime.datetime.strptime(list_datas[0], format_string)
         dt_fim = datetime.datetime.strptime(list_datas[1], format_string)
@@ -215,109 +266,111 @@ class Dataset(object):
 
 
 
-class Dataset2(object):
-    def __init__(self, name, list_tags, **kwargs):
-        self.titulo = ""
-        self.dataset_id = dataset_id 
-        self.origem_id = None # pra quando tiver origem
-        #self.values = {}
-        self.tags = {} # tag_id : Tag
-        self.data = {} # tag_id : Curva 
-        self.timesheet = []
-        self.loader = None
-        self.df = None
-        if(kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
 
+class Pysica(object):
+    un = None
+    dict_connections = {}
+    def __init__(self, save_file = ''):
+        self.un = pint.UnitRegistry() # não esquecer de habilitar o pyplot
+        self.save_file = save_file
+        # inicializar dataset padrão list_datasets. TODO: Carregar dos salvos  
+        #self.dict_datasets = {}
+        self.datasets=[]
+        self.using_dataset = None
+        #self.dataset_pointer = None
+        #dataset_blank = psc.Dataset('blank', titulo='Dataset inicial, só pra não ficar em branco')
+        #self.dict_datasets.update({'blank':dataset_blank})
+        # inicializa lista de tags 
+        #self.dict_tags = {}
+        #self.dict_tags.update({'blank': Tag('blank', titulo='Tag em branco para iniciar tags')})
+        #self.dict_curvas = {}
+       
+    def create_dataset(self, name = "Teste dataset", list_tags =[], **kwargs):
+        """
+        Parameters
+        ----------
+        tags : TYPE
+            DESCRIPTION.
+        **kwargs : TYPE
+            DESCRIPTION.
 
+        Returns
+        -------
+        None.
 
-    def update(self, **kwargs):
-        if(kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
+        """
+        #insere na lista de datasets
+        #print("?")
+        dataset = psc.Dataset(name, list_tags)
+        self.datasets.append(dataset)
+        self.dataset_i = len(self.datasets) - 1
+        return dataset
+
+    def export_dataset(self, dataset, filename='pysca teste.xlsx', mode='excel'):
+        data_var = dataset.data_var
+        data_par = dataset.data_par
+        schema = dataset.schema
+        if mode =='excel':
+            with pd.ExcelWriter(filename) as writer:
+                data_par.to_excel(writer, filename, sheet_name="Parametros")    
+                data_var.to_excel(writer, filename, sheet_name="Variaveis")
+                schema.to_excel(writer, filename, sheet_name="Tags")
         
-    def load_vali_mea_df(self, list_tags, start, end):
-        loader = loaders.ValiLoader(database = 'SICA1_SQL')
-        df_mea = loader.get_vali_mea(list_tags, start, end)
-        self.df = df_mea
         
-        
-    def load_vali_dvr(self, list_tags, start, end):
-        loader = loaders.ValiLoader(database = 'ANGRA1_DVR')
-        df_mea = loader.get_vali_mea(list_tags, start, end)
-        self.df = df_mea
+    # DEPRECATED    
+    def load_dataset_sica(self, caminho, dataset = None, **kwargs): #insere um arquivo txt do SICA no dataset
+        if(not dataset):
+            titulo = kwargs['titulo'] if kwargs['titulo'] else 'Teste Pandas to SICA'
+            dataset_obj = psc.Dataset('SICATESTE', titulo = 'Teste Pandas to SICA')
+        return dataset_obj
     
-    def load_sica_file(self, list_tags, **kwargs):
+    # DEPRECATED
+    def create_dataset_vali(self, list_tags,  start, end, **kwargs): #carrega dados do Vali no dataset
+        """
+        teste doc
+        """
+        dataset_id = "TESTE_VALIDB"
+        dataset = psc.Dataset(dataset_id, titulo = kwargs['titulo'])
+        '''
+        if type(dataset)==str: #cast para Dataset ao criar o objeto
+            dataset = Dataset(dataset)
+        '''
+        dataset.load_vali_mea(list_tags, start, end)
+        return dataset
+    
+    def plot(self, dataset, analise="run"):
+        if analise == 'run': 
+            psp.plot_run(dataset)
+        elif analise == 'runs':
+            psp.plot_runs(dataset)
+        elif analise == 'qualitycw':
+            psp.plot_qualitycw(dataset)
+        elif analise == 'tr':
+            psp.plot_tr(dataset)
+        '''
+        dict_actions = {
+            'runs': psp.plot_runs(dataset),
+            'run': psp.plot_run(dataset),
+            'qualitycw': psp.plot_qualitycw(dataset),
+            }
+        
+        dict_actions[analise]
+        '''
+    
+    def use_dataset(self, dataset_id):
+        self.current_dataset = dataset_id
+        
+    def plot_curva(self, curva ):
         pass
-        
-    def register_tag(self, tag):
-        self.tags.update({tag.tag_id:tag})
-        print(self.tags)
-        
-    def get_tag_list(self):
-        return self.tags.items()
-
     
-    def get_val_dict(self, tag, **kwargs): # para satisfazer os testes agora. 
-        # TODO: pensar em uma função melhor e padronizar os dados de retorno, lembrando que a organização do dataframe pertence ao objeto loader. O Dataset deve trabalhar com os dados já padronizados
-        self.df.loc
-        pass
-
-    def get_timesheet(self):
-        return
-    
-    def load_vali_mea222(self, list_tags, start, end): #TODO: de quem é a responsabilidade de 
-        loader = loaders.ValiLoader()
-        dados_mea = loader.get_vali_mea(list_tags, start, end)
-        # print(dados_mea)
-        valores = []
-        tag_obj = None
+    def save(self, save_file = ''):
+        if save_file: self.save_file = save_file
+        # TODO: json_dumps de todos os objetos 
         
-        for dado_mea in dados_mea:
-            tag_id = dado_mea['PSC']
-            
-            if tag_id not in self.tags: 
-                # REGISTRA tag
-                
-                dados_tag = {
-                    'titulo': dado_mea['Description'],
-                    'origem_id': self.dataset_id,
-                    'descricao': dado_mea['Description'],
-                    'ue_original': dado_mea['UE']
-                    }
-                print(dados_tag)
-                colunas_mantidas_tag = ['PSC', 'Description', 'UE']
-                for col in colunas_mantidas_tag:
-                    dados_tag.update({col: dado_mea[col]})
-                tag_obj = Tag(tag_id, **dados_tag)
-                self.register_tag(tag_obj)
-            '''   
-            if tag_id not in self.tags:
-                 # reinicia inicia vetor de dados da curva para o tag
-                valores = []
-                self.tags.update({tag_id:tag_obj})
-                '''
-            valores.append(dado_mea['Value_Average'])
-        # TODO: registrar os tags no dataset
-        # TODO: registrar os dados 
-    
-    def load_tag(list_tags):
-        pass
-
-# não será feito dessa forma
-class Head(Curva):
-    pass
+    def load(self, load_file):
+        self.save_file  = load_file
+        # TODO: abrir o arquivo e carregar os dados
 
 
 
-  
-# DEPRECATED
-class Tagval(object):
-    val = '' # valor principal procurado, np array + pint
-    tag = ''
-    dados = '';
-    def __init__(self, pysica_tag_obj, dados):
-        tag = pysica_tag_obj
-        dados = dados
     

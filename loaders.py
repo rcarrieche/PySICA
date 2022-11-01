@@ -1,18 +1,30 @@
 import pyodbc 
 import datetime
-from connections import ValiConnection, MongoConnection
 import pandas as pd
 import odm
 import os
 from constantes import *
-
-
-from matplotlib import pyplot as plt
+from pymongo import MongoClient
+#from matplotlib import pyplot as plt
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
 
-
+class ValiConnection(object):
+ 
+    def __init__(self, **kwargs):
+        self.server = 'localhost' 
+        self.database = 'SICA1_SQL' 
+        self.username = 'sa' 
+        self.password = 'Vali1234'
+        if (kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        self.conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+self.server+';DATABASE='+self.database+';UID='+self.username+';PWD='+ self.password)
+        self.cursor = self.conn.cursor
+    
+    def get_cursor(self):
+        return self.cursor
 
 class Loader(object):
     """ 
@@ -36,6 +48,7 @@ class ValiLoader(Loader):
     def __init__(self, **kwargs):
         self.vali_connection = ValiConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
         self.cursor = self.vali_connection.cursor()
+        print("iniciou ValiLoader")
         
     def change_database(self, database):
         """
@@ -165,7 +178,17 @@ class ValiLoader(Loader):
         colunas = [c[0] for c in self.cursor.description]
         return dados,colunas
         
-        
+    def get_angra1dvr_values(self, tagname=None, taglist = []):
+        self.change_database('ANGRA1_DVR')
+        query_resto = ""
+        if tagname:
+            query_resto = " and Tags.name='{0}'".format(tagname)    
+        if taglist:
+            lista_sql = str(taglist).replace('[', '(').replace(']', ')')
+            query_resto = " and Tags.name in {0}".format(lista_sql)
+        query = "SELECT  Tags.Name, Runs.Date, TagValues.* FROM TagValues left join Runs on TagValues.Run = Runs.Run left join Tags on TagValues.TagID = Tags.TagID WHERE Tags.Consolidation is not null {}".format(query_resto)
+        print(query)
+        return self.execute_sql(query)
         
     def get_vali_mea22222(self, list_tags, inicio, fim):
         format_string = '%Y-%m-%d %H:%M:%S'
@@ -247,6 +270,22 @@ class SicaLoader(Loader):
         return dados_sica
 
 class MongoLoader(Loader):  # acho que nem precisa disto, basta usar direto o pymongo e abrir a conexão no __init__
+    def __init__(self, **kwargs):
+        self.connection = MongoConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
+        self.db = self.connection.db
+        
+    def drop_database_test(self, database):
+        # TODO: 
+        self.connection.connection.drop_database(database)
+        
+    def get_tags(self, tagname_list, **kwargs):
+        tags_qs = odm.Tag.objects(name__in = tagname_list, **kwargs)
+        return tags_qs
+        
+    def get_values(self, tag_list, **kwargs):
+        pass
+    
+class OLDMongoLoader(Loader):  # acho que nem precisa disto, basta usar direto o pymongo e abrir a conexão no __init__
     def __init__(self, **kwargs):
         self.connection = MongoConnection(**kwargs) ## TODO: guardar as conexões em um método de classe
         self.db = self.connection.db
