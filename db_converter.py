@@ -500,28 +500,28 @@ def import_osciloscopio():
 
 
 #--NEW DATABASE
-drop_database()
-popular_origens()
+#drop_database()
+#popular_origens()
 
 #--SICA1_SQL
-import_sicasql_tags()
-create_sicasql_vars()
-import_sicasql_values()
+#import_sicasql_tags()
+#create_sicasql_vars()
+#import_sicasql_values()
 
 #--SICA_TXT--
-import_sica_tags()
-create_sica_vars()
-import_sica_values()
+#import_sica_tags()
+#create_sica_vars()
+#import_sica_values()
 
 #--OVATION--
-import_ovation()
+#import_ovation()
 
 #--SIMULADOR--
-import_simulador()
-import_simulador_ovation()
+#import_simulador()
+#import_simulador_ovation()
 
 #--OSCILOSCOPIO--
-import_osciloscopio()
+#import_osciloscopio()
 
 
 

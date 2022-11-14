@@ -1,8 +1,8 @@
 # Database 
-MONGO_DATABASE = "BancoPySICA_Teste_1"
+MONGO_DATABASE = "BancoPySICA_Teste_2"
 
 # gui
-MAIN_TITLE = "PySICA v0.0.0"
+MAIN_TITLE = "PySICA v0.0.1"
 
 # PATHS
 SICA_DIR = 'C:\\Users\\nato\\Pysica\\data\\SICA\\'

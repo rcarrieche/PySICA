@@ -7,11 +7,12 @@ Created on Sat Sep 17 04:41:50 2022
 
 import pysica_classes as psc
 from constantes import *
-
 import pandas as pd
+import odm
+import time
 
 
-from PyQt6.QtCore import QDateTime, Qt, QTimer, QAbstractTableModel, QModelIndex
+from PyQt6.QtCore import QDateTime, Qt, QTimer, QAbstractTableModel, QModelIndex, pyqtSignal
 from PyQt6.QtGui import QColor, QPalette, QAction
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
         QDial, QDialog, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -261,6 +262,10 @@ class PandasModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             return str(self._dataframe.iloc[index.row(), index.column()])
+        
+        if role == Qt.ItemDataRole.DecorationRole:
+            if index.column() == self.columnCount():
+                return QPushButton("text")
 
         return None
 
@@ -318,27 +323,25 @@ class DocumentosWidget(QWidget):
     def __init__(self):
         super(DocumentosWidget, self).__init__() 
 
+
 class OrigensWidget(QWidget):
     def __init__(self):
+        
         super(OrigensWidget, self).__init__()
-        #db = psc.Database()
-        #origens = db.get_origins()
-        #self.tabs = 
-        # define tabela
-        self.tabela = OrigensTable()
+        self.load_page()
         
+    def load_page(self):
+        self.layout = QVBoxLayout()
+        self.grupo_origem_insert = self.gen_groupbox_nova_origem()
+        self.layout.addWidget(self.grupo_origem_insert)
+        self.layout.addWidget(QLabel("Origens (TODAS)"))
+        #layout.addWidget(self.tabela)
+        self.groupbox_tabela = self.gen_groupbox_tabela()
+        self.layout.addWidget(self.groupbox_tabela)
+        self.setLayout(self.layout)
         
-        
-        layout_final = QVBoxLayout()
-        
-        layout_final.addWidget(self.groupbox_nova_origem())
-        layout_final.addWidget(QLabel("Origens (TODAS)"))
-        layout_final.addWidget(self.tabela)
-        self.setLayout(layout_final)
-        #self.view.show()
-
-    def groupbox_nova_origem(self):
-        grupo_insert = QGroupBox()
+    def gen_groupbox_nova_origem(self):
+        grupo_insert = QGroupBox("nova_origem")
         layout_insert = QHBoxLayout()
         insert_nome_label = QLabel("Nova origem")
         insert_nome = QLineEdit("Nome da origem")
@@ -347,6 +350,7 @@ class OrigensWidget(QWidget):
         insert_descricao = QLineEdit("Descrição")
         insert_descricao_label.setBuddy(insert_descricao)
         botao_inserir = QPushButton("Inserir")
+        botao_inserir.clicked.connect(lambda: self.insert_origin(insert_nome.text(), insert_descricao.text()) )
         layout_insert.addWidget(insert_nome_label)
         layout_insert.addWidget(insert_nome)
         layout_insert.addStretch(1)
@@ -355,14 +359,31 @@ class OrigensWidget(QWidget):
         layout_insert.addWidget(botao_inserir)
         grupo_insert.setLayout(layout_insert)
         return grupo_insert
+    
+    def gen_groupbox_tabela(self):
+        self.tabela = OrigensTable()
+        self.grupo_tabela = QGroupBox("grupo_tabela")
+        layout = QVBoxLayout()
+        layout.addWidget(self.tabela)
+        self.grupo_tabela.setLayout(layout)
+        return self.grupo_tabela
+    
+    def insert_origin(self, name, description):
+        origin = odm.DataOrigin(name=name, description = description ).save()
+        self.layout.removeWidget(self.groupbox_tabela)
+        self.groupbox_tabela = self.gen_groupbox_tabela()
+        self.layout.addWidget(self.groupbox_tabela)
+        
+        return origin
 
 class OrigensTable(QTableView):
     def __init__(self):
         super(OrigensTable, self).__init__()
+        self.updatesEnabled()
         db = psc.Database()
-        origens = db.get_origins()
-        origens = origens.drop(['data_origin_id', 'related_docs'], axis=1)
-        #origens['tags'] = origens.loc[]
+        origens = db.get_origins() #retorna um df. Mudar par ser genérico
+        #origens = origens.drop(['data_origin_id', 'related_docs'], axis=1)
+        origens['actions'] = origens['_id']
         #view = QTableView()
         #view.resize(800, 500)
         #view.setAlternatingRowColors(True)
@@ -370,17 +391,56 @@ class OrigensTable(QTableView):
         #print()
         self.setModel(model)
         self.setAlternatingRowColors(True)
+        #self.updatesEnabled()
+
+
         
 class DatasetsWidget(QWidget):
     def __init__(self):
         super(DatasetsWidget, self).__init__()
-        self.tabela = DatasetsTable()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Dataset: conjunto de tags contendo dados para análise"))
-        layout.addWidget(self.tabela)
-        self.setLayout(layout)
+        #self.tabela = DatasetsTable()
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(QLabel("Dataset: conjunto de tags contendo dados para análise"))
+        self.layout.addWidget(self.groupbox_novo_dataset())
+        self.grp_tabela = self.groupbox_tabela()
+        self.layout.addWidget(self.grp_tabela)
+        self.setLayout(self.layout)
         #self.view.show()
-        
+    
+    def groupbox_novo_dataset(self):
+        grupo_insert = QGroupBox()
+        layout_insert = QHBoxLayout()
+        insert_nome_label = QLabel("Novo Dataset")
+        insert_nome = QLineEdit("Nome do dataset")
+        insert_nome_label.setBuddy(insert_nome)
+        insert_descricao_label = QLabel("Descrição")
+        insert_descricao = QLineEdit("Descrição")
+        insert_descricao_label.setBuddy(insert_descricao)
+        botao_inserir = QPushButton("Inserir")
+        botao_inserir.clicked.connect(lambda: self.insert_dataset(insert_nome.text(), insert_descricao.text()))
+        layout_insert.addWidget(insert_nome_label)
+        layout_insert.addWidget(insert_nome)
+        layout_insert.addStretch(1)
+        layout_insert.addWidget(insert_descricao_label)
+        layout_insert.addWidget(insert_descricao)
+        layout_insert.addWidget(botao_inserir)
+        grupo_insert.setLayout(layout_insert)
+        return grupo_insert    
+    
+    def groupbox_tabela(self):
+        self.tabela = DatasetsTable()
+        self.grupo_tabela = QGroupBox()
+        layout = QVBoxLayout()
+        layout.addWidget(self.tabela)
+        self.grupo_tabela.setLayout(layout)
+        return self.grupo_tabela
+    
+    
+    def insert_dataset(self, name, description):
+        dataset = odm.Dataset(name=name, description = description).save()
+        self.tabela = DatasetsTable()
+        return dataset
+'''        
 class DatasetsTable(QTableView):
     def __init__(self):
         super(DatasetsTable, self).__init__()
@@ -393,7 +453,19 @@ class DatasetsTable(QTableView):
         #print()
         self.setModel(model)
         self.setAlternatingRowColors(True)
-
+'''
+class DatasetsTable(QTableWidget):
+    def __init__(self):
+        super(DatasetsTable, self).__init__()
+        db = psc.Database()
+        datasets = db.get_datasets()
+        #view = QTableView()
+        #view.resize(800, 500)
+        #view.setAlternatingRowColors(True)
+        model = PandasModel(datasets)
+        #print()
+        self.setModel(model)
+        self.setAlternatingRowColors(True)
 
 class ConexoesWidget(QWidget):
     def __init__(self):
@@ -401,16 +473,22 @@ class ConexoesWidget(QWidget):
 
 
 class PySICA_GUI(QMainWindow):
+    sinal = pyqtSignal()
     def __init__(self, parent=None):
         super(PySICA_GUI, self).__init__(parent)
+        print(parent)
         self.setWindowTitle(MAIN_TITLE)
-
-        tabs = QTabWidget()
-        #tabs.setTabPosition(QTabWidget.West)
-        tabs.setMovable(True)
         
+        # toolbar
         toolbar = QToolBar("Teste toolbar")
         self.addToolBar(toolbar)
+        
+        # tabs
+        self.tabs = QTabWidget()
+        #tabs.setTabPosition(QTabWidget.West)
+        self.tabs.setMovable(True)
+        
+        
         
         action_arquivo = QAction("Arquivo", self)
         toolbar.addAction(action_arquivo)
@@ -423,20 +501,20 @@ class PySICA_GUI(QMainWindow):
         
         self.aba_fluxogramas = FluxogramasWidget()
         #tabs.addTab(UsuarioWidget(), "Usuario")
-        tabs.addTab(self.aba_fluxogramas, "Fluxogramas")
+        self.tabs.addTab(self.aba_fluxogramas, "Fluxogramas")
         self.aba_tags = TagsWidget()
-        tabs.addTab(self.aba_tags, "Tags")
+        self.tabs.addTab(self.aba_tags, "Tags")
         self.aba_dados = DatasetsWidget()
-        tabs.addTab(self.aba_dados, "Dados")
+        self.tabs.addTab(self.aba_dados, "Dados")
         self.aba_analises = AnalisesWidget()
-        tabs.addTab(self.aba_analises, "Análises")
+        self.tabs.addTab(self.aba_analises, "Análises")
         #tabs.addTab(ConexoesWidget(), "Conexões")
-        tabs.addTab(DocumentosWidget(), "Documentação")
-       
-        tabs.addTab(OrigensWidget(), "Fontes/Origens")
+        self.tabs.addTab(DocumentosWidget(), "Documentação")
+        self.aba_origens = OrigensWidget()
+        self.tabs.addTab(self.aba_origens, "Fontes/Origens")
         #tabs.addTab(OrigensWidget(), "Origens")
         
-        self.setCentralWidget(tabs)
+        self.setCentralWidget(self.tabs)
 
 """
         for n, color in enumerate(["red", "green", "blue", "yellow"]):

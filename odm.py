@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import mongoengine as me
 import datetime
-
+import odm_classes as ocl
 
 
 
@@ -69,6 +69,7 @@ class Tag(me.Document):
     data_origin = me.ReferenceField('DataOrigin')
     data = me.DictField()
     kks = me.StringField()
+    labels = me.ListField(me.StringField())
     meta = {
         'indexes' : ['name', 'data_origin' ]
     }
@@ -91,7 +92,9 @@ class DataOrigin(me.Document):
     parent_origin = me.ReferenceField('DataOrigin')
     created_at = me.DateTimeField()
     modified_at = me.DateTimeField(default=datetime.datetime.now())
-    
+    meta = {
+        'queryset_class': ocl.DataOriginQuerySet
+        }
     
     def save(self, *args, **kwargs):
         if not self.created_at:
@@ -148,7 +151,9 @@ class Dataset(me.Document):
     var_list = me.ListField(me.ReferenceField('TagVar'))
     created_at = me.DateTimeField()
     modified_at = me.DateTimeField(default=datetime.datetime.now())
-    
+    meta = {
+        'allow_inheritance' : True
+    }
     
     def save(self, *args, **kwargs):
         if not self.created_at:
@@ -163,6 +168,10 @@ class PropVal(me.EmbeddedDocument):
     mea_unit = me.ReferenceField('EngUnit')
 
 
+class ParVal(Values):
+    tag = me.ReferenceField(Tag)
+    val = me.FloatField()
+    mea_unit = me.ReferenceField('EngUnit')
     
 # Descrição dos componentes    
 class Component(me.Document):
@@ -196,6 +205,13 @@ class Curve(me.Document):
             self.created_at=datetime.datetime.now()
         self.modified_at = datetime.datetime.now()
         return super(Curve, self).save(*args, **kwargs)
+
+class Connection(me.Document):
+    name = me.StringField()
+    description = me.StringField()
+    labels = me.ListField(me.StringField())
+    tag_list = me.ListField(me.ReferenceField('Tag'))
+    tag_ports = me.ListField(me.ListField(me.ReferenceField('Tag')))
     
 #---------------------------------#
 
