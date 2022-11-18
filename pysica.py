@@ -6,21 +6,12 @@ import sys, os
 #from pysica_classes import *
 #import pysica_classes as psc
 #import pysica_plots as psp
-import pysica_gui as pg
-import datetime
 import pandas as pd
 import pysica_classes as psc
 import odm
 from mongoengine import connect, disconnect
 from constantes import *
 
-
-from PyQt6.QtCore import QDateTime, Qt, QTimer
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
-        QDial, QDialog, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-        QProgressBar, QPushButton, QRadioButton, QScrollBar, QSizePolicy,
-        QSlider, QSpinBox, QStyleFactory, QTableWidget, QTabWidget, QTextEdit,
-        QVBoxLayout, QWidget)
 
 
 

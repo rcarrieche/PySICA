@@ -10,13 +10,19 @@ import seaborn as sns
 ur = pint.UnitRegistry()
 ur.load_definitions('C:\\Users\\nato\\Pysica\\dev\\add_units.txt')
 import pysica
+import odm
+import odm_classes as ocl
+import pysica_classes as psc
+from mongoengine.queryset.visitor import Q
+# importing ObjectId from bson library
+from bson.objectid import ObjectId
 
-MONGO_DATABASE = 'Teste_1'
+#MONGO_DATABASE = 'Teste_1'
+
+#ps = pysica.PySICA()
 
 
-
-
-
+'''
 def read_tags(tag_list, date_list, data_origin_name = 'ANGRA1_DVR'):
     
     # tag_list = ['PI1980A', 'PI1981A']
@@ -121,3 +127,4 @@ def read_tags(tag_list, date_list, data_origin_name = 'ANGRA1_DVR'):
 #print(df_tags)
 
 # TODO: fazer do jeito tosco mesmo, preciso terminar o protótipo essa semana. 
+'''

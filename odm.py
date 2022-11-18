@@ -2,7 +2,8 @@
 import mongoengine as me
 import datetime
 import odm_classes as ocl
-
+import pandas as pd
+from mongoengine.queryset.visitor import Q
 
 
 class MeaUnit(me.Document):
@@ -140,7 +141,14 @@ class Values(me.Document):
         'indexes' : ['tag_var', 'date']
     }
     
-   
+    
+class SearchDate(me.Document):
+    name = me.StringField()
+    description = me.StringField()
+    start = me.DateTimeField()
+    end = me.DateTimeField()
+    interval = me.IntField()
+    fill_na = me.StringField()   
 
 class Dataset(me.Document):
     name = me.StringField()
@@ -151,28 +159,85 @@ class Dataset(me.Document):
     var_list = me.ListField(me.ReferenceField('TagVar'))
     created_at = me.DateTimeField()
     modified_at = me.DateTimeField(default=datetime.datetime.now())
+    search_dates = me.ListField(me.ReferenceField(SearchDate))
     meta = {
-        'allow_inheritance' : True
+        #'allow_inheritance' : True,
+        'queryset_class': ocl.DatasetQuerySet
     }
+    def __init__(self, *args, **kwargs):
+        super(Dataset, self).__init__(*args, **kwargs)
+        self.data_tags = self.get_tags()
+        #self.data_par = pd.DataFrame()
+        self.data_vars = self.get_vars()
+        self.data_runs = self.get_runs()
+        self.values = pd.DataFrame()
+        self.info = pd.DataFrame()
+        self.dates = self.get_search_dates()
     
     def save(self, *args, **kwargs):
         if not self.created_at:
             self.created_at=datetime.datetime.now()
         self.modified_at = datetime.datetime.now()
         return super(Dataset, self).save(*args, **kwargs)
-
-
+    
+    def teste(self, a=0):
+        print(a)
+        print(self.name)
+        
+    def get_tags(self):
+        #print(self.tag_list)
+        fields = ['name', 'description', 'vars']
+        self.data_tags = pd.DataFrame([tag.to_mongo() for tag in self.tag_list])
+        return self.data_tags
+    
+    def get_vars(self):
+        self.data_vars = pd.DataFrame([var.to_mongo() for var in self.var_list])
+        return self.data_vars
+    
+    def get_info(self):
+        self.info = pd.DataFrame.from_dict(self._data, orient='index')
+        return self.info
+    
+    def get_runs(self):
+        pass
+    
+    def get_search_dates(self):
+        pass
+    def load_values(self):
+        if not self.dates: 
+            raise Exception("sem intervalo definido")
+        values = Values.objects(tag_var__in=self.data_vars["_id"])
+        values_list = [{'date':val['date'], 'val':val['val'], 'tag_var':val['tag_var']['description']} for val in values]
+        self.values = pd.DataFrame(values_list)
+        return self.values
+    
+    def insert_tags(self, list_tag_ids = [], tags=None):
+        if not tags:
+            tags = Tag.objects(id__in=list_tag_ids)
+        print(self.name)
+        lista = list(self.tag_list)
+        print(lista)
+        lista = lista + list_tag_ids
+        print(lista)
+        self.tag_list = Tag.objects(id__in=lista)
+        self.save()
+        
+        
 class PropVal(me.EmbeddedDocument):
     tag = me.ReferenceField(Tag)
     val = me.FloatField()
     mea_unit = me.ReferenceField('EngUnit')
 
 
+# FUTURE: sublasse dos valores 
+'''
 class ParVal(Values):
     tag = me.ReferenceField(Tag)
     val = me.FloatField()
     mea_unit = me.ReferenceField('EngUnit')
-    
+  '''
+
+  
 # Descrição dos componentes    
 class Component(me.Document):
     name = me.StringField() 
@@ -211,11 +276,13 @@ class Connection(me.Document):
     description = me.StringField()
     labels = me.ListField(me.StringField())
     tag_list = me.ListField(me.ReferenceField('Tag'))
-    tag_ports = me.ListField(me.ListField(me.ReferenceField('Tag')))
+    tag_ports = me.ListField(me.ListField(me.DictField()))
+
     
 #---------------------------------#
 
 # classes do config
+# TODO: Vai ser tudo 
 """
 class ProcessoModificador(me.Document):
     pass

@@ -92,7 +92,9 @@ class Database(object):
                 i = i+1
                 dados_tagvar = coll_tagvar.find({"tag":{"$eq":t["_id"]}})
                 #print([d for d in dados_tagvar]) 
+                print(len(list(dados_tagvar)))l
                 for var in dados_tagvar:
+                    print(var)
                     j = j + 1
                 #print(t)
                 #print(string_tags)
@@ -139,11 +141,9 @@ class Dataset(object):
             self.read_tags(list_tags)
             """
         self.schema = pd.DataFrame()
-        #self.data_par = pd.DataFrame()
+        self.data_par = pd.DataFrame()
         self.data_var = pd.DataFrame()
         self.data_run = pd.DataFrame()
-        self.date_intervals = pd.DataFrame()
-        self.dataset = None
     
     def insert_tags(self, list_tag_ids = [], tags=None):
         if not tags:

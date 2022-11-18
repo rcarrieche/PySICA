@@ -10,7 +10,7 @@ from matplotlib import pyplot
 import pint
 import sys, os
 #import pysica_plots as psp
-import pysica_gui as pg
+#import pysica_gui as pg
 import datetime
 import pandas as pd
 import pysica_classes as psc
@@ -21,10 +21,11 @@ from mongoengine import connect
 
 
 ps = pysica.PySICA()
-ds_name = "TESTE"
-ds_description = "Teste para dataset"
-ds = ps.create_dataset(name=ds_name, description=ds_description)
-list_tagnames = ["PI484", 'PI485, PI486', 'PI4695', 'PI4696', 'FI464', 'FI465', 'GOV', 'PI468A', 'PI469A','FI474', 'FI475',  'PI478A', 'PI479A', 'FI466', 'FI467', 'FI476', 'FI477', 'F1466A', 'F1468A', 'PI1311', 'PI1312', 'TR1315', 'TR1316', 'TI1313C', 'TI1314C', '6748', 'PIR08']
+#ds_name = "TESTE"
+#ds_description = "Teste para dataset"
+#ds = ps.create_dataset(name=ds_name, description=ds_description)
+ds = odm.Dataset.objects(_id="6372e9b0da1db9e12606ffaa").first()
+list_tagnames = ["PI484", 'PI485','PI486', 'PI4695', 'PI4696', 'FI464', 'FI465', 'GOV', 'PI468A', 'PI469A','FI474', 'FI475',  'PI478A', 'PI479A', 'FI466', 'FI467', 'FI476', 'FI477', 'F1466A', 'F1468A', 'PI1311', 'PI1312', 'TR1315', 'TR1316', 'TI1313C', 'TI1314C', '6748', 'PIR08']
 list_tag_ids = []
 for name in list_tagnames:
     tags = odm.Tag.objects((Q(name__icontains=name)|Q(original_name__contains=name))|Q(description__contains=name))

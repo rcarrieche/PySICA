@@ -1,5 +1,5 @@
 # Database 
-MONGO_DATABASE = "BancoPySICA_Teste_2"
+MONGO_DATABASE = "BancoPySICA_Teste_1"
 
 # gui
 MAIN_TITLE = "PySICA v0.0.1"

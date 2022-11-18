@@ -367,8 +367,9 @@ def import_sica_values():
     print("\n\n*** Importando valores de "+origin_name+"...")
     origin = odm.DataOrigin.objects(name__contains=origin_name).first()
     #df_raw = pd.read_fwf(SICA_TAGFILE, encoding = 'ISO-8859-1')
-    pastas = ['!dados2021\\', '!outros_dados\\', '!stretch_out_2022\\']
-    colunas = ['']
+    #pastas = ['!dados2021\\', '!stretch_out_2022\\', '!Parada e partida 2021\\', '!uprate_lote1\\', 'partida 2022\\', 'Dados SICA 2020-11-14 10s\\']
+    pastas = ['partida 2022\\', 'Dados SICA 2020-11-14 10s\\']
+    #pastas = ['!dados2021\\']
     caminhos = [SICA_IMPORT_DIR+pasta for pasta in pastas]
     
         
@@ -395,8 +396,8 @@ def import_sica_values():
             names = df['name'].unique()
             for name in names:
                 tag = odm.Tag.objects(name = name, data_origin = origin).first()
-                valor = odm.TagVar.objects(tag = tag, name='Valor').first()
-                status = odm.TagVar.objects(tag = tag, name='Status').first()
+                valor = odm.TagVar.objects(tag = tag, name='VALOR').first()
+                status = odm.TagVar.objects(tag = tag, name='STATUS').first()
                 list_values = []
                 filtro = df['name'] == name
                 df[filtro].apply(lambda row: list_values.append(odm.Values(val=row['val'], date=row['date'], tag_var=valor)), axis=1)
@@ -423,7 +424,7 @@ def import_sicasql_values():
     for tag in tags:
         print("importando "+tag['name'])
         list_values = []
-        tagvar = odm.TagVar.objects(tag=tag, name="Value_Average").first()
+        tagvar = odm.TagVar.objects(tag=tag, original_name="Value_Average").first()
         filtro = df_dados_mea['name'] == tag['name'] 
         def insert_values(row):
             list_values.append(odm.Values(val=row['val'], date=row['date'], tag_var=tagvar))
@@ -526,10 +527,10 @@ def import_osciloscopio():
 
 
 #--ANGRA1_DVR--
-import_dvr_tags()
-create_dvr_vars()
-import_dvr_runs()
-import_dvr_values()
+#import_dvr_tags()
+#create_dvr_vars()
+#import_dvr_runs()
+#import_dvr_values()
 
 # 
 

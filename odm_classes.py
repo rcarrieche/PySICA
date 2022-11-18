@@ -10,17 +10,17 @@ import datetime
 import pandas as pd
 
 def queryset_pandas(queryset):
-    return pd.DataFrame(list(queryset))
-    pass
+    l = list(queryset)
+    print(l)
+    return pd.DataFrame(l)
 
 class DatasetQuerySet(me.QuerySet):
-    pass
+    def to_dataframe(self):
+        return queryset_pandas(self)
 
 class DataOriginQuerySet(me.QuerySet):
     pass
 
 class TagQuerySet(me.QuerySet):
     pass
-
-
 

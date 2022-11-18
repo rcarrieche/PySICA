@@ -145,7 +145,7 @@ def import_dvr_restantes():
 def liga_nomes():
     data_origins = odm.DataOrigin.objects()
     tags = odm.Tag.objects() 
-    print(data_origins.values_list('name'))
+    #print(data_origins.values_list('name'))
     for tag in tags:
         similar_tags = odm.Tag.objects(name=tag['name'], id__ne=tag['id']) # todos os tags de mesmo nome ou mesmo nome original, excluindo o tag que estamos buscando 
         if similar_tags:
@@ -156,9 +156,10 @@ def liga_nomes():
             [related.append(st) for st in similar_tags]
             tag["tag_related"] = related
             print(tag["tag_related"])
-            
             tag.save()
             print("tag "+tag['name']+"  inseridos: "+str(len(similar_tags)))
+            conexao = odm.Connection(name='EQUIVALENT', tag_list=related.append(tag))
+            conexao.save()
         else:
             print(""+tag['name']+" sem similar por nome!")
         
@@ -173,7 +174,7 @@ def liga_malhas():
 
 
 # Finalizando ANGRA1_DVR import
-#import_dvr_restantes()
+import_dvr_restantes()
 
 # cria tags dos equipamentos do Vali
 
