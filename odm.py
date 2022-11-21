@@ -18,6 +18,7 @@ class MeaUnit(me.Document):
 class TagVar(me.Document):
     name = me.StringField()
     original_name = me.StringField()
+    full_name = me.StringField()
     description = me.StringField()
     tagvar_id = me.SequenceField()
     tag = me.ReferenceField('Tag')
@@ -228,7 +229,10 @@ class Dataset(me.Document):
             tagvar = TagVar.objects(id=ObjectId(col_var_id)).first()
             tag = Tag.objects(id=tagvar['tag']['id']).first()
             data_origin = DataOrigin.objects(id=tag['data_origin']['id']).first()
-            return ""+data_origin['name']+'.'+tag['name']+'.'+tagvar['name'] + '('+str(tagvar['unit'])+')'
+            nome_completo = ""+data_origin['name']+'.'+tag['name']+'.'+tagvar['name'] + '('+str(tagvar['unit'])+')'
+            tagvar['full_name'] = nome_completo
+            tagvar.save()
+            return nome_completo
         colunas_novas = [completa_nome(ind[1]) for ind in df2.columns]
         df2.columns=colunas_novas
         print(df2.columns)
