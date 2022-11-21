@@ -4,6 +4,7 @@ import datetime
 import odm_classes as ocl
 import pandas as pd
 from mongoengine.queryset.visitor import Q
+from bson.objectid import ObjectId
 
 
 class MeaUnit(me.Document):
@@ -18,6 +19,7 @@ class TagVar(me.Document):
     name = me.StringField()
     original_name = me.StringField()
     description = me.StringField()
+    tagvar_id = me.SequenceField()
     tag = me.ReferenceField('Tag')
     unit = me.StringField()
     mea_unit = me.ReferenceField(MeaUnit)
@@ -192,6 +194,9 @@ class Dataset(me.Document):
     
     def get_vars(self):
         self.data_vars = pd.DataFrame([var.to_mongo() for var in self.var_list])
+        #self.data_vars['tag_name'] = pd.Series(Tag.objects(_id=self.data_vars['tag']).first())
+        #self.data_vars['tag_name'] = self.data_vars['tag'].apply(lambda row: Tag.get(_id=row)['name'])
+        #self.data_vars['data_origin_name'] = self.data_vars['tag'].apply(lambda row: DataOrigin.get(_id=row)['name'])
         return self.data_vars
     
     def get_info(self):
@@ -201,14 +206,34 @@ class Dataset(me.Document):
     def get_runs(self):
         pass
     
+    def save_tagvars(self):
+        self.var_list = list(self.data_vars['_id'])
+        self.save()
+    
     def get_search_dates(self):
-        pass
-    def load_values(self):
-        if not self.dates: 
-            raise Exception("sem intervalo definido")
-        values = Values.objects(tag_var__in=self.data_vars["_id"])
-        values_list = [{'date':val['date'], 'val':val['val'], 'tag_var':val['tag_var']['description']} for val in values]
-        self.values = pd.DataFrame(values_list)
+        sd = pd.DataFrame([date.to_mongo() for date in self.search_dates])
+        self.dates = sd
+        return self.dates
+    
+    def load_values(self, search_date_pos = 0):
+        #if not self.dates or self.dates.empty(): 
+        #   raise Exception("sem intervalo definido")
+        qf = Q(tag_var__in=self.data_vars["_id"]) & Q(date__gte=self.dates['start'][search_date_pos]) & Q(date__lte=self.dates['end'][search_date_pos])
+        values = Values.objects(qf)
+        values_list = [val.to_mongo() for val in values]
+        #values_list = [{'date':val['date'], 'val':val['val'], 'tag_var':val['tag_var']['description']} for val in values]
+        dfval = pd.DataFrame(values_list)
+        df2 = pd.pivot_table(dfval, columns='tag_var', index='date')
+        def completa_nome(col_var_id):
+            tagvar = TagVar.objects(id=ObjectId(col_var_id)).first()
+            tag = Tag.objects(id=tagvar['tag']['id']).first()
+            data_origin = DataOrigin.objects(id=tag['data_origin']['id']).first()
+            return ""+data_origin['name']+'.'+tag['name']+'.'+tagvar['name'] + '('+str(tagvar['unit'])+')'
+        colunas_novas = [completa_nome(ind[1]) for ind in df2.columns]
+        df2.columns=colunas_novas
+        print(df2.columns)
+        df2 = df2.reset_index().resample('{}S'.format(self.dates['interval'][search_date_pos]), on='date').mean()
+        self.values = df2
         return self.values
     
     def insert_tags(self, list_tag_ids = [], tags=None):
@@ -221,6 +246,138 @@ class Dataset(me.Document):
         print(lista)
         self.tag_list = Tag.objects(id__in=lista)
         self.save()
+        
+    def populate_tag_list(self, list_tagnames): 
+        list_tag_ids = []
+        for name in list_tagnames:
+            tags = Tag.objects((Q(name__icontains=name)|Q(original_name__contains=name))|Q(description__contains=name))
+            #print(tags.values_list('name'))
+            new_tag_ids = list(tags.values_list('id'))
+            #print(new_tag_ids, type(new_tag_ids))
+            list_tag_ids = list_tag_ids + new_tag_ids
+        self['tag_list'] = list_tag_ids
+        return self['tag_list']
+    
+    def populate_var_list(self, list_varnames, origem_list = None):
+        #list_var = ['CXI6748', 'GOV1', 'GOV2', 'GOV3', 'GOV4', 'PI4695', 'PI4696', 'PI484', 'PI485', 'PI486', 'PIR08', 'PIR-08', '']
+        if(origem_list):
+            origens = DataOrigin.objects(name__in=origem_list)
+        else:
+            origens = DataOrigin.objects()
+        variaveis = []
+        for var in list_varnames:
+            variaveis= variaveis + list(TagVar.objects(tag__in=self['tag_list'], description__contains=var, data_origin__in=origens) )
+        self['var_list'] = variaveis
+        return self['var_list']
+
+# datas(dates) devem ser marcados como [start, end, interval_s]
+    def set_date(self, list_date, name='', description=''):
+        fdia = lambda s: datetime.datetime.strptime(s, '%Y-%m-%d %H:%M:%S')  
+        #list_date = ['2022-09-22 00:00:00', '2022-09-23 00:00:00', 5]
+        #description = "Teste dia 29/10/2022 5 min, 1 dia"
+        start = fdia(list_date[0])
+        end = fdia(list_date[1])
+        interval = list_date[2]
+        #interval = datetime.timedelta(minutes=dates[2]).seconds
+        #search_dates = [{'start':datetime.datetime}]
+        new_date = SearchDate(start=start, end = end, interval = interval, name=name, description=description).save()
+        #aaa.save()
+        #self.search_dates = 
+        #self.update(push__search_dates = new_date)
+        self.search_dates = [new_date]
+    
+    def filtro(self, exclude_list):
+        filtro = (~ self.data_vars['description'].str.contains('\$') )& (~ self.data_vars['description'].str.contains('rabalho') )
+        self.data_vars = self.data_vars[filtro]
+        return self.data_vars
+    
+    #TODO: 
+    def full_data_vars(self):
+        # prara odm
+        self.data_vars['tag_name'] = None
+        self.data_vars['data_origin_name'] = None
+        self.data_vars['mea_unit_name'] = None
+        def fname(row): 
+            name = None
+            origin = None
+            try: 
+                tag = Tag.objects(id=row['tag']).first()
+                #print(tag['name'], tag['data_origin']['name'])
+                name = tag['name']
+                origin = tag['data_origin']['name']
+                mea_unit = MeaUnit.objects.get(id = row['mea_unit'])['name']
+                print(name, origin, mea_unit)
+            except Exception as e:
+                name = None      
+                origin = None
+                tag = None
+                mea_unit = None
+                print(e)
+                print(row)
+            #dorigin = tag['data_origin']['name']
+            #row['tag_name'] = name
+            #row['data_origin_name'] = origin
+            #print(row['data_origin_name'])
+            #print(name, origin)
+            return name, origin, mea_unit
+        #df['tag_name'], df['data_origin_name'] = df.apply(fname, axis=1)
+        a = self.data_vars.apply(fname, axis=1)
+        #return a
+        #df['tag_name'] = df['tag'] 
+        self.data_vars['tag_name'] = a.apply(lambda row: row[0])
+        self.data_vars['data_origin_name'] = a.apply(lambda row: row[1])
+        self.data_vars[' mea_unit_name'] = a.apply(lambda row: row[2])
+        return self.data_vars
+    #TODO: 
+        
+    def full_data_tags(self):
+        # prara odm
+        self.data_tags['mea_unit_name'] = None
+        self.data_tags['data_origin_name'] = None
+        self.data_tags['total_vars'] = None
+        def fname(row): 
+            name = None
+            origin = None
+            mea_unit = None
+            total_vars = 0
+            
+            try: 
+                name = row['name']
+                origin = DataOrigin.objects(id = row['data_origin']).first()['name']
+                mea_unit = MeaUnit.objects(id = row['mea_unit']).first()['name']
+                total_vars = TagVar.objects(tag=row['_id']).count()
+            except Exception as e:
+                name = None      
+                origin = None
+                tag = None
+                mea_unit = None
+                total_vars = 0
+                print(e)
+                print(row)
+            try:
+                origin = DataOrigin.objects(id = row['data_origin']).first()['name']
+            except:
+                pass
+            #row['tag_name'] = name
+            #row['data_origin_name'] = origin
+            #print(row['data_origin_name'])
+            #print(name, origin)
+            return name, origin, mea_unit, total_vars
+        #df['tag_name'], df['data_origin_name'] = df.apply(fname, axis=1)
+        a = self.data_tags.apply(fname, axis=1)
+        #return a
+        #df['tag_name'] = df['tag'] 
+        self.data_tags['tag_name'] = a.apply(lambda row: row[0])
+        self.data_tags['data_origin_name'] = a.apply(lambda row: row[1])
+        self.data_tags['mea_unit_name'] = a.apply(lambda row: row[2])
+        self.data_tags['total_vars'] = a.apply(lambda row: row[3])
+        return self.data_tags
+    
+    
+    def update_taglist(self):
+        self.var_list = list(self.data_vars['_id'])
+        
+      
         
         
 class PropVal(me.EmbeddedDocument):
@@ -257,7 +414,7 @@ class Run(me.Document): # compatibilidade com Vali para conversão
     values = me.DictField()
     # TODO: procurar as propriedades do run na lista de tags e inserir tudo aqui em forma embedded
     
-# upload das curvas 
+# upload das curvas. Estender odm.Values??
 class Curve(me.Document):
     tag_vars = me.ListField(me.ReferenceField(TagVar))
     name = me.StringField()

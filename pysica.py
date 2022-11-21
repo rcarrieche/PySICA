@@ -58,14 +58,17 @@ class PySICA(object):
         return dataset
 
     def export_dataset(self, dataset, filename='pysca teste.xlsx', mode='excel'):
-        data_var = dataset.data_var
-        data_par = dataset.data_par
-        schema = dataset.schema
+        #schema = dataset.schema
+        print()
         if mode =='excel':
-            with pd.ExcelWriter(filename) as writer:
-                data_par.to_excel(writer, filename, sheet_name="Parametros")    
-                data_var.to_excel(writer, filename, sheet_name="Variaveis")
-                schema.to_excel(writer, filename, sheet_name="Tags")
+            with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+                print(writer)
+                dataset.data_vars.to_excel(writer, sheet_name="Variáveis")    
+                dataset.data_tags.to_excel(writer, sheet_name="Tags")
+                dataset.values.to_excel(writer, sheet_name="Valores")
+                dataset.get_info().to_excel(writer, sheet_name="Info")
+                dataset.dates.to_excel(writer, sheet_name="Datas")
+                
         
 '''        
     # DEPRECATED    

@@ -191,7 +191,7 @@ def create_sicasql_vars():
                 unit_name = ''
             else:
                 unit_name = master_var['mea_unit']
-            description = ''+tag['name']+' - '+tag['description']+' - '+master_var['description']
+            description = ''+tag['name']+' - '+tag['description']+' - '+master_var['description']+' ('+unit_name+')'
             tagvar = odm.TagVar(name=master_var['name'], original_name=master_var['original_name'], description = description, tag = tag, alias=[tag['name']], unit=unit_name, mea_unit = ue, data_origin=data_origin, categorical = is_categorical, parent_var=master_var)
             tagvar.save()
 
