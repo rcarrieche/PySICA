@@ -6,6 +6,14 @@ import pandas as pd
 from mongoengine.queryset.visitor import Q
 from bson.objectid import ObjectId
 
+def completa_nome(col_var_id):
+    tagvar = TagVar.objects(id=ObjectId(col_var_id)).first()
+    tag = Tag.objects(id=tagvar['tag']['id']).first()
+    data_origin = DataOrigin.objects(id=tag['data_origin']['id']).first()
+    nome_completo = ""+data_origin['name']+'.'+tag['name']+'.'+tagvar['name'] + '('+str(tagvar['unit'])+')'
+    tagvar['full_name'] = nome_completo
+    tagvar.save()
+    return nome_completo
 
 class MeaUnit(me.Document):
     name = me.StringField()
@@ -43,7 +51,10 @@ class TagVar(me.Document):
             self.created_at=datetime.datetime.now()
         self.modified_at = datetime.datetime.now()
         return super(TagVar, self).save(*args, **kwargs)
-    
+    def add_converted(self, tagvar, name, description, unit=None, tag=None):
+        if not tag:
+            tag = tagvar['tag']
+        new_var = TagVar(name=name, tag=tag, description=description, unit=unit).save()
 class TagType(me.Document):
     """
         Tipos: component, stream, measurement, run_info, value 
@@ -127,6 +138,8 @@ class Documento(me.Document):
     
     
 
+# índice está cheio de lixo, esta classe deve ser esvaziada para ser usada somente com variáveis ativas, mantendo bem o índice. 
+# refazer sistema de busca na próxima revisão
 
 class Values(me.Document):
     val = me.FloatField()
@@ -143,6 +156,16 @@ class Values(me.Document):
     meta = {
         'indexes' : ['tag_var', 'date']
     }
+
+# Valores temporais devem ser sincronizados no array    
+class Val(me.Document):
+    values = me.ListField()
+    val = me.ListField(me.FloatField())
+    dates = me.ListField(me.DateTimeField())
+    tag_var = me.ReferenceField('TagVar')
+    interval = me.IntField()
+    start = me.DateTimeField()
+    end = me.DateTimeField()
     
     
 class SearchDate(me.Document):
@@ -216,24 +239,26 @@ class Dataset(me.Document):
         self.dates = sd
         return self.dates
     
-    def load_values(self, search_date_pos = 0):
+    def load_values(self, search_date_pos = 0, fill = False):
         #if not self.dates or self.dates.empty(): 
         #   raise Exception("sem intervalo definido")
         qf = Q(tag_var__in=self.data_vars["_id"]) & Q(date__gte=self.dates['start'][search_date_pos]) & Q(date__lte=self.dates['end'][search_date_pos])
         values = Values.objects(qf)
+        
+            
         values_list = [val.to_mongo() for val in values]
+        if fill:
+            filled_vars = [v for v in list(set(values.values_list('tag_var')))]
+            empty_vars = [v for v in self.var_list if v not in filled_vars]
+            for var in empty_vars:
+                val = Values(val=None, tag_var = var, date=None, full_name=None)
+                values_list.append(val.to_mongo)
         #values_list = [{'date':val['date'], 'val':val['val'], 'tag_var':val['tag_var']['description']} for val in values]
         dfval = pd.DataFrame(values_list)
-        df2 = pd.pivot_table(dfval, columns='tag_var', index='date')
-        def completa_nome(col_var_id):
-            tagvar = TagVar.objects(id=ObjectId(col_var_id)).first()
-            tag = Tag.objects(id=tagvar['tag']['id']).first()
-            data_origin = DataOrigin.objects(id=tag['data_origin']['id']).first()
-            nome_completo = ""+data_origin['name']+'.'+tag['name']+'.'+tagvar['name'] + '('+str(tagvar['unit'])+')'
-            tagvar['full_name'] = nome_completo
-            tagvar.save()
-            return nome_completo
-        colunas_novas = [completa_nome(ind[1]) for ind in df2.columns]
+        print(dfval['full_name'])
+        df2 = pd.pivot_table(dfval, columns='full_name', index='date')
+        #colunas_novas = [completa_nome(ind[1]) for ind in df2.columns]
+        colunas_novas = [ind[1] for ind in df2.columns]
         df2.columns=colunas_novas
         print(df2.columns)
         df2 = df2.reset_index().resample('{}S'.format(self.dates['interval'][search_date_pos]), on='date').mean()
@@ -259,19 +284,23 @@ class Dataset(me.Document):
             new_tag_ids = list(tags.values_list('id'))
             #print(new_tag_ids, type(new_tag_ids))
             list_tag_ids = list_tag_ids + new_tag_ids
-        self['tag_list'] = list_tag_ids
+        self['tag_list'] = list(set(list_tag_ids))
         return self['tag_list']
     
-    def populate_var_list(self, list_varnames, origem_list = None):
+    def populate_var_list(self, list_varnames=None, origem_list = None):
         #list_var = ['CXI6748', 'GOV1', 'GOV2', 'GOV3', 'GOV4', 'PI4695', 'PI4696', 'PI484', 'PI485', 'PI486', 'PIR08', 'PIR-08', '']
         if(origem_list):
             origens = DataOrigin.objects(name__in=origem_list)
         else:
             origens = DataOrigin.objects()
         variaveis = []
-        for var in list_varnames:
-            variaveis= variaveis + list(TagVar.objects(tag__in=self['tag_list'], description__contains=var, data_origin__in=origens) )
-        self['var_list'] = variaveis
+        if list_varnames:
+            for var in list_varnames:
+                variaveis= variaveis + list(TagVar.objects(tag__in=self['tag_list'], description__contains=var, data_origin__in=origens) )
+        else: 
+            variaveis = list(TagVar.objects(tag__in=self['tag_list'], data_origin__in=origens) )
+                
+        self['var_list'] = list(set(variaveis))
         return self['var_list']
 
 # datas(dates) devem ser marcados como [start, end, interval_s]
@@ -309,7 +338,7 @@ class Dataset(me.Document):
                 #print(tag['name'], tag['data_origin']['name'])
                 name = tag['name']
                 origin = tag['data_origin']['name']
-                mea_unit = MeaUnit.objects.get(id = row['mea_unit'])['name']
+                mea_unit = MeaUnit.objects(id = row['mea_unit']).first()['name']
                 print(name, origin, mea_unit)
             except Exception as e:
                 name = None      
@@ -378,9 +407,11 @@ class Dataset(me.Document):
         return self.data_tags
     
     
-    def update_taglist(self):
+    def update_varlist(self):
         self.var_list = list(self.data_vars['_id'])
-        
+        #self.save()
+    def update_taglist(self):
+        self.tag_list = list(self.data_tags['_id'])
       
         
         

@@ -66,10 +66,12 @@ class PySICA(object):
                 dataset.data_vars.to_excel(writer, sheet_name="Variáveis")    
                 dataset.data_tags.to_excel(writer, sheet_name="Tags")
                 dataset.values.to_excel(writer, sheet_name="Valores")
-                dataset.get_info().to_excel(writer, sheet_name="Info")
+                #dataset.get_info().to_excel(writer, sheet_name="Info")
                 dataset.dates.to_excel(writer, sheet_name="Datas")
-                
+    
         
+
+
 '''        
     # DEPRECATED    
     def load_dataset_sica(self, caminho, dataset = None, **kwargs): #insere um arquivo txt do SICA no dataset

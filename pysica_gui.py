@@ -464,8 +464,8 @@ class DatasetsTable(QTableWidget):
         #view.setAlternatingRowColors(True)
         model = PandasModel(datasets)
         #print()
-        self.setModel(model)
-        self.setAlternatingRowColors(True)
+        #self.setModel(model)
+        #self.setAlternatingRowColors(True)
 
 class ConexoesWidget(QWidget):
     def __init__(self):

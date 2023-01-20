@@ -10,6 +10,7 @@ import pysica_gui as pg
 import datetime
 import pandas as pd
 import pysica_classes as psc
+import pysica as ps
 
 from PyQt6.QtCore import QDateTime, Qt, QTimer
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
@@ -20,7 +21,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
 
 
 if __name__ == '__main__':
-    ps = psc.Pysica()
+    ps = ps.PySICA()
     app = QApplication(sys.argv)
     pysica_janela = pg.PySICA_GUI()
     
